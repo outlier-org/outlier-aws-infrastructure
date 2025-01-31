@@ -57,7 +57,7 @@ def github_cicd(gh, account, env, python_version):
                     },
                     {
                         "name": "Install dependencies",
-                        "run": "poetry install",
+                        "run": "poetry install --no-root",
                     },
                     {
                         "name": "Install cdk & projen",
