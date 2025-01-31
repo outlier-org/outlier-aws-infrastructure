@@ -33,7 +33,7 @@ jobs:
           virtualenvs-in-project: "true"
           prefer-active-python: "true"
       - name: Install dependencies
-        run: poetry install
+        run: poetry install --no-root
       - name: Install cdk & projen
         run: npm install -g aws-cdk projen
       - name: Run CDK synth for the NIGHTLY environment
