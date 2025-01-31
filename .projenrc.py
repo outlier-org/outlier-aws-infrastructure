@@ -74,6 +74,12 @@ project = AwsCdkPythonApp(
 # so the CDK CLI knows which region to use
 project.tasks.add_environment("CDK_DEFAULT_REGION", aws_region)
 
+# First remove the existing task
+project.tasks.remove_task("install:ci")
+
+# Then add our modified version
+project.tasks.add_task("install:ci", exec="poetry check --lock && poetry install --no-root")
+
 # Define the target AWS accounts for the different environments
 target_accounts = {
     "nightly": "528757783796",

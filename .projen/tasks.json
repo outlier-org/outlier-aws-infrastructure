@@ -121,10 +121,9 @@
     },
     "install:ci": {
       "name": "install:ci",
-      "description": "Install dependencies with frozen lockfile",
       "steps": [
         {
-          "exec": "poetry check --lock && poetry install"
+          "exec": "poetry check --lock && poetry install --no-root"
         }
       ]
     },
