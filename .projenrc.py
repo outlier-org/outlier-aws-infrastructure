@@ -20,7 +20,7 @@ project = AwsCdkPythonApp(
     cdk_version="2.153.0", # Find the latest CDK version here: https://pypi.org/project/aws-cdk-lib/
     cdk_version_pinning=True,
     module_name=python_module_name,
-    name="outlier-aws-cdk-infrastructure",
+    name="outlier-infrastructure",
     license="Apache-2.0",
     description="Create and deploy an AWS CDK app that will manage the infra for 1 or more AWS account(s) using GitHub actions.",
     version="0.1.0",
@@ -30,6 +30,7 @@ project = AwsCdkPythonApp(
     dev_deps=["projen@0.85.2", "ruff"], # Find the latest projen version here: https://pypi.org/project/projen/
     github_options={
         "pull_request_lint": False,
+        "workflows": True
     },
     git_ignore_options={
         "ignore_patterns": [

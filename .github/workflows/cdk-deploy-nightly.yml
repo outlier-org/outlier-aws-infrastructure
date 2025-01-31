@@ -4,7 +4,7 @@ name: cdk-deploy-nightly
 on:
   push:
     branches:
-      - main
+      - nightly
   workflow_dispatch: {}
 jobs:
   deploy:
