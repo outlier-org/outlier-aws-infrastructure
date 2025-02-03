@@ -37,7 +37,7 @@ class DatabaseConstruct(BaseConstruct):
             instance_identifier="outlier-nightly",
             database_name="outlier_nightly",
             engine=rds.DatabaseInstanceEngine.postgres(
-                version=rds.PostgresEngineVersion.of(12, '20')
+                version=rds.PostgresEngineVersion.VER_12_20
             ),
             instance_type=ec2.InstanceType.of(
                 ec2.InstanceClass.T3,
@@ -69,8 +69,13 @@ class DatabaseConstruct(BaseConstruct):
                 "ParamGroup",
                 "default.postgres12"
             ),
+            option_group=rds.OptionGroup.from_option_group_name(
+                self,
+                "OptionGroup",
+                "default:postgres-12"
+            ),
             allow_major_version_upgrade=False,
-            ca_certificate_identifier="rds-ca-rsa2048-g1",
+            ca_certificate_identifier="rds-ca-rsa2048-g1"
         )
 
         # Add tags
