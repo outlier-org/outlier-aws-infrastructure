@@ -2,6 +2,7 @@ import aws_cdk as cdk
 from constructs import Construct
 from custom_constructs.network_construct import NetworkConstruct
 from custom_constructs.storage_construct import StorageConstruct
+from custom_constructs.iam_construct import IamConstruct
 from custom_constructs.ecr_construct import EcrConstruct
 # from custom_constructs.alb_construct import AlbConstruct
 # from custom_constructs.ecs_construct import EcsConstruct
@@ -23,6 +24,9 @@ class BaseStack(cdk.Stack):
 
         # Storage resources (S3 buckets)
         storage = StorageConstruct(self, "StorageConstruct")
+
+        # IAM resources
+        iam = IamConstruct(self, "IamConstruct")
 
         # ECR repository
         ecr = EcrConstruct(self, "EcrConstruct")
