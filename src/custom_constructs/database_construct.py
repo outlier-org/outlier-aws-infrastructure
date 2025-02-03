@@ -25,9 +25,6 @@ class DatabaseConstruct(BaseConstruct):
             self,
             "RdsInstance",
             snapshot_identifier="rds:outlier-nightly-2025-01-26-06-28",
-            engine=rds.DatabaseInstanceEngine.postgres(
-                version=rds.PostgresEngineVersion.VER_12
-            ),
             allocated_storage=125,
             instance_type=ec2.InstanceType.of(
                 ec2.InstanceClass.BURSTABLE3,
