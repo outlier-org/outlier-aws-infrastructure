@@ -9,6 +9,8 @@ from custom_constructs.ecr_construct import EcrConstruct
 # from custom_constructs.pipeline_construct import CodePipelineConstruct
 # from custom_constructs.database_construct import DatabaseConstruct
 
+from custom_constructs.demo_construct import DemoConstruct
+
 class BaseStack(cdk.Stack):
     def __init__(self, scope: Construct, id: str, **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
@@ -21,6 +23,9 @@ class BaseStack(cdk.Stack):
         self.service_sg = network.service_security_group
         self.rds_sg = network.rds_security_group
         self.secrets_sg = network.secrets_manager_security_group
+
+        # for Demo
+        demo = DemoConstruct(self, "DemoConstruct")
 
         # Storage resources (S3 buckets)
         storage = StorageConstruct(self, "StorageConstruct")
@@ -38,6 +43,14 @@ class BaseStack(cdk.Stack):
         #     vpc=network.vpc,
         #     security_group=network.alb_security_group,
         #     subnets=network.vpc.public_subnets
+        # )
+        #
+        # # Add ALB DNS output for easy verification
+        # cdk.CfnOutput(
+        #     self,
+        #     "LoadBalancerDNS",
+        #     value=alb.load_balancer.load_balancer_dns_name,
+        #     description="Load Balancer DNS Name"
         # )
         #
         # # Create ECS resources
