@@ -83,7 +83,6 @@ class AlbConstruct(BaseConstruct):
             "HttpsListener",
             port=443,
             certificates=[certificate],
-            ssl_policy=elbv2.SslPolicy.TLS13,
             default_target_groups=[self._service_target_group]
         )
 
