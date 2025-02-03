@@ -9,8 +9,6 @@ from custom_constructs.ecr_construct import EcrConstruct
 # from custom_constructs.pipeline_construct import CodePipelineConstruct
 # from custom_constructs.database_construct import DatabaseConstruct
 
-from custom_constructs.demo_construct import DemoConstruct
-
 class BaseStack(cdk.Stack):
     def __init__(self, scope: Construct, id: str, **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
