@@ -25,7 +25,6 @@ class DatabaseConstruct(BaseConstruct):
             self,
             "RdsInstance",
             snapshot_identifier="rds:outlier-nightly-2025-01-26-06-28",
-            database_name="outlier_nightly_test_2",
             engine=rds.DatabaseInstanceEngine.postgres(
                 version=rds.PostgresEngineVersion.VER_12
             ),
