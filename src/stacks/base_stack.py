@@ -31,7 +31,7 @@ class BaseStack(cdk.Stack):
         # ECR repository
         ecr = EcrConstruct(self, "EcrConstruct")
 
-        Create ALB with target groups
+        # Create ALB with target groups
         alb = AlbConstruct(
             self,
             "AlbConstruct",
