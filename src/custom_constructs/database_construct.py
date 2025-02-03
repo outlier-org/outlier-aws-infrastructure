@@ -37,7 +37,7 @@ class DatabaseConstruct(BaseConstruct):
             instance_identifier="outlier-nightly",
             database_name="outlier_nightly",
             engine=rds.DatabaseInstanceEngine.postgres(
-                version=rds.PostgresEngineVersion.VER_12_20
+                version=rds.PostgresEngineVersion.VER_12
             ),
             instance_type=ec2.InstanceType.of(
                 ec2.InstanceClass.T3,
