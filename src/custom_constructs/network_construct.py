@@ -1,5 +1,5 @@
 from aws_cdk import aws_ec2 as ec2
-import aws_cdk as cdk  # Added this import for Tags
+import aws_cdk as cdk
 from constructs import Construct
 from .base_construct import BaseConstruct
 
@@ -10,7 +10,7 @@ class NetworkConstruct(BaseConstruct):
         self.vpc = ec2.Vpc.from_lookup(
             self,
             "ExistingVPC",
-            vpc_id="vpc-00059e30c80aa84f2" # vpc_nightly_outlier
+            vpc_id="vpc-00059e30c80aa84f2"
         )
 
         self.create_security_groups()
@@ -18,46 +18,52 @@ class NetworkConstruct(BaseConstruct):
     def create_security_groups(self):
         """Create all application security groups"""
         # ALB Security Group
+        alb_name = f"outlier-alb-{self.environment}-sg-test"
         self.alb_sg = ec2.SecurityGroup(
             self,
             "AlbSecurityGroup",
             vpc=self.vpc,
-            security_group_name=f"outlier-alb-{self.environment}-sg-test",
+            security_group_name=alb_name,
             description=f"Security group for Outlier ALB - {self.environment}",
             allow_all_outbound=True
         )
 
         # Service Security Group
+        service_name = f"outlier-service-{self.environment}-sg-test"
         self.service_sg = ec2.SecurityGroup(
             self,
             "ServiceSecurityGroup",
             vpc=self.vpc,
-            security_group_name=f"outlier-service-{self.environment}-sg-test",
+            security_group_name=service_name,
             description=f"Security group for Outlier Services - {self.environment}",
             allow_all_outbound=True
         )
 
         # RDS Security Group
+        rds_name = f"outlier-rds-{self.environment}-sg-test"
         self.rds_sg = ec2.SecurityGroup(
             self,
             "RdsSecurityGroup",
             vpc=self.vpc,
-            security_group_name=f"outlier-rds-{self.environment}-sg-test",
+            security_group_name=rds_name,
             description=f"Security group for outlier {self.environment} RDS instance",
             allow_all_outbound=True
         )
 
         # Secrets Manager Endpoint Security Group
+        secrets_name = f"secrets-manager-to-ecs-sg-{self.environment}-test"
         self.secrets_sg = ec2.SecurityGroup(
             self,
             "SecretsManagerSecurityGroup",
             vpc=self.vpc,
-            security_group_name=f"secrets-manager-to-ecs-sg-{self.environment}-test",
+            security_group_name=secrets_name,
             description=f"Security group for Secrets Manager VPC Endpoint - {self.environment}",
             allow_all_outbound=True
         )
 
-        # ALB ingress rules
+        # Add ingress rules
+
+        # ALB rules
         self.alb_sg.add_ingress_rule(
             peer=ec2.Peer.any_ipv4(),
             connection=ec2.Port.tcp(80),
@@ -103,11 +109,18 @@ class NetworkConstruct(BaseConstruct):
             description="Allow HTTPS from ECS service"
         )
 
-        # Add standard tags
-        for sg in [self.alb_sg, self.service_sg, self.rds_sg, self.secrets_sg]:
+        # Add standard tags using the variables we stored
+        sg_names = {
+            self.alb_sg: alb_name,
+            self.service_sg: service_name,
+            self.rds_sg: rds_name,
+            self.secrets_sg: secrets_name
+        }
+
+        for sg, name in sg_names.items():
             cdk.Tags.of(sg).add("env", self.environment)
             cdk.Tags.of(sg).add("bounded_context", "outlier")
-            cdk.Tags.of(sg).add("Name", sg.security_group_name)
+            cdk.Tags.of(sg).add("Name", name)
 
     @property
     def alb_security_group(self) -> ec2.ISecurityGroup:
