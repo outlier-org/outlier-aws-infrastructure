@@ -1,3 +1,4 @@
+# src/stacks/base_stack.py
 import aws_cdk as cdk
 from constructs import Construct
 from custom_constructs.network_construct import NetworkConstruct
@@ -40,7 +41,27 @@ class BaseStack(cdk.Stack):
             subnets=network.vpc.public_subnets
         )
 
-        # Add ALB DNS output for easy verification
+        # Create ECS resources (no target groups - CodeDeploy will handle)
+        ecs = EcsConstruct(
+            self,
+            "EcsConstruct",
+            vpc=network.vpc,
+            security_groups=[network.service_security_group]
+        )
+
+        # Create Pipeline resources (commented until ready)
+        # pipeline = CodePipelineConstruct(
+        #     self,
+        #     "PipelineConstruct",
+        #     ecs_cluster=ecs.cluster,
+        #     ecs_service=ecs.service,
+        #     ecs_jobs_service=ecs.jobs_service,
+        #     ecr_repository=ecr.repository,
+        #     service_target_groups=[alb.service_tg_1, alb.service_tg_2],
+        #     jobs_target_groups=[alb.jobs_tg_1, alb.jobs_tg_2]
+        # )
+
+        # Add outputs for verification
         cdk.CfnOutput(
             self,
             "LoadBalancerDNS",
@@ -48,35 +69,28 @@ class BaseStack(cdk.Stack):
             description="Load Balancer DNS Name"
         )
 
-        # Create ECS resources (commented until ready)
-        ecs = EcsConstruct(
+        cdk.CfnOutput(
             self,
-            "EcsConstruct",
-            vpc=network.vpc,
-            security_groups=[network.service_security_group],
-            service_target_groups=[alb.service_tg_1, alb.service_tg_2],
-            jobs_target_groups=[alb.jobs_tg_1, alb.jobs_tg_2]
+            "EcsClusterArn",
+            value=ecs.cluster.cluster_arn,
+            description="ECS Cluster ARN"
         )
 
-        # Create Pipeline resources (commented until ready)
-        # pipeline = CodePipelineConstruct(
-        #     self,
-        #     "PipelineConstruct",
-        #     ecs_cluster=ecs.ecs_cluster,
-        #     ecs_service=ecs.ecs_service,
-        #     ecs_jobs_service=ecs.ecs_jobs_service,
-        #     ecr_repository=ecr.repository
-        # )
+        cdk.CfnOutput(
+            self,
+            "EcsServiceArn",
+            value=ecs.service.service_arn,
+            description="ECS Service ARN"
+        )
 
-        # Create outlier_nightly RDS database (commented until ready)
-        # database = DatabaseConstruct(
-        #     self,
-        #     "DatabaseConstruct",
-        #     vpc=network.vpc,
-        #     rds_security_groups=[network.rds_security_group]
-        # )
+        cdk.CfnOutput(
+            self,
+            "EcsJobsServiceArn",
+            value=ecs.jobs_service.service_arn,
+            description="ECS Jobs Service ARN"
+        )
 
-        # Add Target Group ARNs as outputs for verification
+        # Target group outputs (for CodeDeploy config)
         cdk.CfnOutput(
             self,
             "ServiceTargetGroup1Arn",

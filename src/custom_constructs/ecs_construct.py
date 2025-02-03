@@ -12,9 +12,7 @@ class EcsConstruct(BaseConstruct):
             scope: Construct,
             id: str,
             vpc: ec2.IVpc,
-            security_groups: list[ec2.ISecurityGroup],
-            service_target_groups: list[elbv2.IApplicationTargetGroup],  # [tg1, tg2]
-            jobs_target_groups: list[elbv2.IApplicationTargetGroup]      # [tg1, tg2]
+            security_groups: list[ec2.ISecurityGroup]
     ):
         super().__init__(scope, id)
 
@@ -43,9 +41,7 @@ class EcsConstruct(BaseConstruct):
             health_check_grace_period=cdk.Duration.seconds(0),
             deployment_controller=ecs.DeploymentController(
                 type=ecs.DeploymentControllerType.CODE_DEPLOY
-            ),
-            # Task definition will be managed by CodeDeploy
-            task_definition=None  # This will be set by CodeDeploy during deployment
+            )
         )
 
         # Jobs Service
@@ -64,18 +60,7 @@ class EcsConstruct(BaseConstruct):
             health_check_grace_period=cdk.Duration.seconds(0),
             deployment_controller=ecs.DeploymentController(
                 type=ecs.DeploymentControllerType.CODE_DEPLOY
-            ),
-            # Task definition will be managed by CodeDeploy
-            task_definition=None  # This will be set by CodeDeploy during deployment
-        )
-
-        # Configure service with initial target group (CodeDeploy will manage switching)
-        self._service.attach_to_application_target_group(
-            target_group=service_target_groups[0]  # Start with TG1
-        )
-
-        self._jobs_service.attach_to_application_target_group(
-            target_group=jobs_target_groups[0]  # Start with TG1
+            )
         )
 
     @property
