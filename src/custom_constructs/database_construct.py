@@ -45,7 +45,7 @@ class DatabaseConstruct(BaseConstruct):
             # Storage Settings
             storage_type=rds.StorageType.GP3,
             allocated_storage=125,
-            storage_encrypted=TRUE,
+            storage_encrypted=True,
 
             # Backup Settings
             backup_retention=cdk.Duration.days(7),
