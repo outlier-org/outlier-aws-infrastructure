@@ -1,6 +1,7 @@
 import aws_cdk as cdk
 from constructs import Construct
 from custom_constructs.network_construct import NetworkConstruct
+from custom_constructs.database_construct import DatabaseConstruct
 
 
 class BaseStack(cdk.Stack):
