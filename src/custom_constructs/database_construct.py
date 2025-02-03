@@ -37,7 +37,7 @@ class DatabaseConstruct(BaseConstruct):
             subnet_group=self.subnet_group,
             security_groups=rds_security_groups,
             publicly_accessible=False,
-            deletion_protection=True,
+            deletion_protection=False,
             auto_minor_version_upgrade=False
         )
 
