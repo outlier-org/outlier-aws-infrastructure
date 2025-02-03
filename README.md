@@ -21,6 +21,26 @@ This repository contains Outlier's AWS CDK project. It defines infrastructure as
 
 ---
 
+#### What AWS Resources are ✅ managed by this project?
+- Our core application stack.
+  - ✅ ECR (App Images)
+  - ✅ ALB (App Load Balancer)
+  - ✅ ECS (App Containers)
+  - ✅ RDS (App Database)
+  - ✅ CodePipeline (App CI/CD)
+  - ✅ S3 Buckets for Application (App Blob Storage)
+
+#### What AWS Resources are NOT ❌ managed by this project?
+- Any non-core application resources.
+- ❌ Task Definitions
+  - These live inside our application repositories. see `outlier-api/taskdef_nightly.json`
+- ❌ Secrets Manager 
+  - It is not good practice to manage Secrets Manager resources in this code. Instead, we actually fetch Secrets dynamically in this project, as needed.
+- ❌ Redshift (Data Warehouse)
+- ❌ Firehose, DMS, DataSync and other non-application-stack services.
+
+---
+
 ## Setup Instructions
 
 ### Steps to Configure and Deploy
