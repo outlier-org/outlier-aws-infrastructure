@@ -39,19 +39,3 @@ class StorageConstruct(BaseConstruct):
             "savvas:security:s3:public-bucket:exempt",
             "false"
         )
-
-        # Demo Bucket
-        self.demo_bucket = s3.Bucket(
-            self,
-            "Demo Bucket",
-            bucket_name=f"demo-{self.environment}-test",
-            encryption=s3.BucketEncryption.S3_MANAGED,
-            bucket_key_enabled=True,
-            enforce_ssl=True,
-            block_public_access=s3.BlockPublicAccess.BLOCK_ALL,
-            object_ownership=s3.ObjectOwnership.BUCKET_OWNER_ENFORCED,
-        )
-        cdk.Tags.of(self.demo_bucket).add(
-            "savvas:security:s3:public-bucket:exempt",
-            "false"
-        )

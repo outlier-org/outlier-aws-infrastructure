@@ -4,7 +4,7 @@ from custom_constructs.network_construct import NetworkConstruct
 from custom_constructs.storage_construct import StorageConstruct
 from custom_constructs.iam_construct import IamConstruct
 from custom_constructs.ecr_construct import EcrConstruct
-# from custom_constructs.alb_construct import AlbConstruct
+from custom_constructs.alb_construct import AlbConstruct
 # from custom_constructs.ecs_construct import EcsConstruct
 # from custom_constructs.pipeline_construct import CodePipelineConstruct
 # from custom_constructs.database_construct import DatabaseConstruct
@@ -31,22 +31,22 @@ class BaseStack(cdk.Stack):
         # ECR repository
         ecr = EcrConstruct(self, "EcrConstruct")
 
-        # Create ALB with target groups
-        # alb = AlbConstruct(
-        #     self,
-        #     "AlbConstruct",
-        #     vpc=network.vpc,
-        #     security_group=network.alb_security_group,
-        #     subnets=network.vpc.public_subnets
-        # )
-        #
-        # # Add ALB DNS output for easy verification
-        # cdk.CfnOutput(
-        #     self,
-        #     "LoadBalancerDNS",
-        #     value=alb.load_balancer.load_balancer_dns_name,
-        #     description="Load Balancer DNS Name"
-        # )
+        Create ALB with target groups
+        alb = AlbConstruct(
+            self,
+            "AlbConstruct",
+            vpc=network.vpc,
+            security_group=network.alb_security_group,
+            subnets=network.vpc.public_subnets
+        )
+
+        # Add ALB DNS output for easy verification
+        cdk.CfnOutput(
+            self,
+            "LoadBalancerDNS",
+            value=alb.load_balancer.load_balancer_dns_name,
+            description="Load Balancer DNS Name"
+        )
         #
         # # Create ECS resources
         # ecs = EcsConstruct(
