@@ -37,6 +37,7 @@ class DatabaseConstruct(BaseConstruct):
             allocated_storage=125,
             storage_type=rds.StorageType.GP3,
             iops=3000,
+            storage_throughput=125,
             storage_encrypted=False,
             backup_retention=cdk.Duration.days(7),
             preferred_backup_window="06:17-06:47",
@@ -57,10 +58,7 @@ class DatabaseConstruct(BaseConstruct):
                 "default.postgres12"
             ),
             allow_major_version_upgrade=False,
-            credentials=rds.Credentials.from_username(
-                username="postgres",
-                password=cdk.SecretValue.unsafe_plain_text("REPLACEME")  # You'll want to handle this securely
-            )
+            ca_certificate_identifier="rds-ca-rsa2048-g1",
         )
 
         # Add tags
