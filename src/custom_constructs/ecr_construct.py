@@ -11,7 +11,7 @@ class EcrConstruct(BaseConstruct):
         self.repository = ecr.Repository(
             self,
             "OutlierEcr",
-            repository_name="outlier-ecr",  # Matches existing repo name
+            repository_name="outlier-ecr-test",
             lifecycle_rules=[
                 ecr.LifecycleRule(
                     description="Delete when imageCountMoreThan (10)",
