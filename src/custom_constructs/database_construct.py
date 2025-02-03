@@ -29,6 +29,7 @@ class DatabaseConstruct(BaseConstruct):
             engine=rds.DatabaseInstanceEngine.postgres(
                 version=rds.PostgresEngineVersion.VER_12
             ),
+            allocated_storage=125,
             instance_type=ec2.InstanceType.of(
                 ec2.InstanceClass.BURSTABLE3,
                 ec2.InstanceSize.LARGE
