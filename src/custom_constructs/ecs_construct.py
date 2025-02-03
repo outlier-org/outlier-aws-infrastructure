@@ -22,20 +22,6 @@ class EcsConstruct(BaseConstruct):
             vpc=vpc
         )
 
-        # Import existing task definitions
-        service_task_def = ecs.TaskDefinition.from_task_definition_attributes(
-            self,
-            "ServiceTaskDef",
-            task_definition_arn="arn:aws:ecs:us-east-1:528757783796:task-definition/Outlier-Service-Task-nightly:16",
-            compatibility=ecs.Compatibility.FARGATE
-        )
-
-        jobs_task_def = ecs.TaskDefinition.from_task_definition_attributes(
-            self,
-            "JobsServiceTaskDef",
-            task_definition_arn="arn:aws:ecs:us-east-1:528757783796:task-definition/Outlier-job-task-nightly:16",
-            compatibility=ecs.Compatibility.FARGATE
-        )
 
         # Main Service
         self._service = ecs.FargateService(
@@ -43,7 +29,6 @@ class EcsConstruct(BaseConstruct):
             "Service",
             service_name=f"outlier-service-ecs-{self.environment}-test",
             cluster=self._cluster,
-            task_definition=service_task_def,
             desired_count=2,
             platform_version=ecs.FargatePlatformVersion.VERSION1_4,
             security_groups=security_groups,
@@ -59,7 +44,6 @@ class EcsConstruct(BaseConstruct):
             "JobsService",
             service_name=f"outlier-job-service-ecs-{self.environment}-test",
             cluster=self._cluster,
-            task_definition=jobs_task_def,
             desired_count=1,
             platform_version=ecs.FargatePlatformVersion.VERSION1_4,
             security_groups=security_groups,
