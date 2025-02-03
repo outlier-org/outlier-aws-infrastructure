@@ -74,7 +74,6 @@ class DatabaseConstruct(BaseConstruct):
                 "default:postgres-12"
             ),
             allow_major_version_upgrade=False,
-            ca_certificate_identifier="rds-ca-rsa2048-g1"
         )
 
         # Add tags
