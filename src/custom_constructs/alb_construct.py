@@ -38,11 +38,11 @@ class AlbConstruct(BaseConstruct):
             deletion_protection=False
         )
 
-        # Create Target Groups
-        self._service_target_group = elbv2.ApplicationTargetGroup(
+        # Create Main Service Target Groups
+        self._service_tg_1 = elbv2.ApplicationTargetGroup(
             self,
-            "ServiceTargetGroup",
-            target_group_name=f"out-main-svc-tg-2-{self.environment}-test",
+            "ServiceTargetGroup1",
+            target_group_name=f"outlier-service-tg-1-{self.environment}-test",
             vpc=vpc,
             port=80,
             protocol=elbv2.ApplicationProtocol.HTTP,
@@ -55,10 +55,10 @@ class AlbConstruct(BaseConstruct):
             deregistration_delay=cdk.Duration.seconds(300)
         )
 
-        self._jobs_target_group = elbv2.ApplicationTargetGroup(
+        self._service_tg_2 = elbv2.ApplicationTargetGroup(
             self,
-            "JobsTargetGroup",
-            target_group_name=f"out-job-svc-tg-1-{self.environment}-test",
+            "ServiceTargetGroup2",
+            target_group_name=f"outlier-service-tg-2-{self.environment}-test",
             vpc=vpc,
             port=80,
             protocol=elbv2.ApplicationProtocol.HTTP,
@@ -71,22 +71,55 @@ class AlbConstruct(BaseConstruct):
             deregistration_delay=cdk.Duration.seconds(300)
         )
 
-        # Add HTTP Listener
+        # Create Jobs Service Target Groups
+        self._jobs_tg_1 = elbv2.ApplicationTargetGroup(
+            self,
+            "JobsTargetGroup1",
+            target_group_name=f"outlier-jobs-tg-1-{self.environment}-test",
+            vpc=vpc,
+            port=80,
+            protocol=elbv2.ApplicationProtocol.HTTP,
+            target_type=elbv2.TargetType.IP,
+            health_check=elbv2.HealthCheck(
+                path="/health",
+                healthy_http_codes="200-499",
+                interval=cdk.Duration.seconds(30)
+            ),
+            deregistration_delay=cdk.Duration.seconds(300)
+        )
+
+        self._jobs_tg_2 = elbv2.ApplicationTargetGroup(
+            self,
+            "JobsTargetGroup2",
+            target_group_name=f"outlier-jobs-tg-2-{self.environment}-test",
+            vpc=vpc,
+            port=80,
+            protocol=elbv2.ApplicationProtocol.HTTP,
+            target_type=elbv2.TargetType.IP,
+            health_check=elbv2.HealthCheck(
+                path="/health",
+                healthy_http_codes="200-499",
+                interval=cdk.Duration.seconds(30)
+            ),
+            deregistration_delay=cdk.Duration.seconds(300)
+        )
+
+        # Add HTTP Listener (defaults to service tg 1)
         http_listener = self._load_balancer.add_listener(
             "HttpListener",
             port=80,
-            default_target_groups=[self._service_target_group]
+            default_target_groups=[self._service_tg_1]
         )
 
-        # Add HTTPS Listener
+        # Add HTTPS Listener (defaults to service tg 1)
         https_listener = self._load_balancer.add_listener(
             "HttpsListener",
             port=443,
             certificates=[certificate],
-            default_target_groups=[self._service_target_group]
+            default_target_groups=[self._service_tg_1]
         )
 
-        # Add listener rules for jobs
+        # Add listener rules for jobs (using jobs tg 1 initially)
         https_listener.add_target_groups(
             "CronRule",
             priority=1,
@@ -98,7 +131,7 @@ class AlbConstruct(BaseConstruct):
                     "/test-cron/*"
                 ])
             ],
-            target_groups=[self._jobs_target_group]
+            target_groups=[self._jobs_tg_1]
         )
 
         https_listener.add_target_groups(
@@ -112,7 +145,7 @@ class AlbConstruct(BaseConstruct):
                     "/script/*"
                 ])
             ],
-            target_groups=[self._jobs_target_group]
+            target_groups=[self._jobs_tg_1]
         )
 
         # Add tags
@@ -124,9 +157,17 @@ class AlbConstruct(BaseConstruct):
         return self._load_balancer
 
     @property
-    def service_target_group(self) -> elbv2.IApplicationTargetGroup:
-        return self._service_target_group
+    def service_tg_1(self) -> elbv2.IApplicationTargetGroup:
+        return self._service_tg_1
 
     @property
-    def jobs_target_group(self) -> elbv2.IApplicationTargetGroup:
-        return self._jobs_target_group
+    def service_tg_2(self) -> elbv2.IApplicationTargetGroup:
+        return self._service_tg_2
+
+    @property
+    def jobs_tg_1(self) -> elbv2.IApplicationTargetGroup:
+        return self._jobs_tg_1
+
+    @property
+    def jobs_tg_2(self) -> elbv2.IApplicationTargetGroup:
+        return self._jobs_tg_2

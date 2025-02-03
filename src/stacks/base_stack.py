@@ -47,18 +47,18 @@ class BaseStack(cdk.Stack):
             value=alb.load_balancer.load_balancer_dns_name,
             description="Load Balancer DNS Name"
         )
-        #
-        # # Create ECS resources
+
+        # Create ECS resources (commented until ready)
         # ecs = EcsConstruct(
         #     self,
         #     "EcsConstruct",
         #     vpc=network.vpc,
         #     security_groups=[network.service_security_group],
-        #     service_target_group=alb.service_target_group,
-        #     jobs_target_group=alb.jobs_target_group
+        #     service_target_groups=[alb.service_tg_1, alb.service_tg_2],
+        #     jobs_target_groups=[alb.jobs_tg_1, alb.jobs_tg_2]
         # )
-        #
-        # # Create Pipeline resources
+
+        # Create Pipeline resources (commented until ready)
         # pipeline = CodePipelineConstruct(
         #     self,
         #     "PipelineConstruct",
@@ -68,7 +68,7 @@ class BaseStack(cdk.Stack):
         #     ecr_repository=ecr.repository
         # )
 
-        # Create outlier_nightly RDS database
+        # Create outlier_nightly RDS database (commented until ready)
         # database = DatabaseConstruct(
         #     self,
         #     "DatabaseConstruct",
@@ -76,17 +76,31 @@ class BaseStack(cdk.Stack):
         #     rds_security_groups=[network.rds_security_group]
         # )
 
-        # Add outputs if needed for resource information
-        # cdk.CfnOutput(
-        #     self,
-        #     "DrupalBucketName",
-        #     value=storage.drupal_bucket.bucket_name,
-        #     description="Drupal Files Bucket Name"
-        # )
-        #
-        # cdk.CfnOutput(
-        #     self,
-        #     "ProgressBucketName",
-        #     value=storage.progress_bucket.bucket_name,
-        #     description="Student Progress Bucket Name"
-        # )
+        # Add Target Group ARNs as outputs for verification
+        cdk.CfnOutput(
+            self,
+            "ServiceTargetGroup1Arn",
+            value=alb.service_tg_1.target_group_arn,
+            description="Service Target Group 1 ARN"
+        )
+
+        cdk.CfnOutput(
+            self,
+            "ServiceTargetGroup2Arn",
+            value=alb.service_tg_2.target_group_arn,
+            description="Service Target Group 2 ARN"
+        )
+
+        cdk.CfnOutput(
+            self,
+            "JobsTargetGroup1Arn",
+            value=alb.jobs_tg_1.target_group_arn,
+            description="Jobs Target Group 1 ARN"
+        )
+
+        cdk.CfnOutput(
+            self,
+            "JobsTargetGroup2Arn",
+            value=alb.jobs_tg_2.target_group_arn,
+            description="Jobs Target Group 2 ARN"
+        )
