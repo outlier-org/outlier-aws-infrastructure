@@ -24,9 +24,6 @@ class BaseStack(cdk.Stack):
         self.rds_sg = network.rds_security_group
         self.secrets_sg = network.secrets_manager_security_group
 
-        # for Demo
-        demo = DemoConstruct(self, "DemoConstruct")
-
         # Storage resources (S3 buckets)
         storage = StorageConstruct(self, "StorageConstruct")
 
