@@ -20,12 +20,12 @@ class DatabaseConstruct(BaseConstruct):
             )
         )
 
-        # Create RDS instance
-        self.db_instance = rds.DatabaseInstance(
+        # Create RDS instance from snapshot
+        self.db_instance = rds.DatabaseInstanceFromSnapshot(
             self,
             "RdsInstance",
-            # Basic Settings
-            instance_identifier=f"outlier-{self.environment}-test",
+            snapshot_identifier="rds:outlier-nightly-2025-01-26-06-28",
+            database_name="outlier_nightly_test_2"
             engine=rds.DatabaseInstanceEngine.postgres(
                 version=rds.PostgresEngineVersion.VER_12
             ),
@@ -33,45 +33,67 @@ class DatabaseConstruct(BaseConstruct):
                 ec2.InstanceClass.BURSTABLE3,
                 ec2.InstanceSize.LARGE
             ),
-            database_name=f"outlier_{self.environment}",
-
-            # Network Settings
             vpc=vpc,
             subnet_group=self.subnet_group,
             security_groups=rds_security_groups,
-            multi_az=False,
             publicly_accessible=False,
-
-            # Storage Settings
-            storage_type=rds.StorageType.GP3,
-            allocated_storage=125,
-            storage_encrypted=True,
-
-            # Backup Settings
-            backup_retention=cdk.Duration.days(7),
-            preferred_backup_window="06:17-06:47",
-            preferred_maintenance_window="sun:06:51-sun:07:21",
-            auto_minor_version_upgrade=False,
-            delete_automated_backups=True,
-
-            # Monitoring Settings
-            enable_performance_insights=False,
-            cloudwatch_logs_exports=["postgresql", "upgrade"],
-            monitoring_interval=cdk.Duration.seconds(0),
-
-            # Other Settings
-            deletion_protection=False,
-            copy_tags_to_snapshot=False,
-            parameters={
-                # Using default parameter group
-            },
-
-            # Credentials - We'll use Secrets Manager in production
-            credentials=rds.Credentials.from_generated_secret(
-                username="postgres",
-                secret_name=f"outlier-{self.environment}-db-credentials-test"
-            )
+            deletion_protection=True,
+            auto_minor_version_upgrade=False
         )
+
+
+        # Create RDS instance from scratch
+#         self.db_instance = rds.DatabaseInstance(
+#             self,
+#             "RdsInstance",
+#             # Basic Settings
+#             instance_identifier=f"outlier-{self.environment}-test",
+#             engine=rds.DatabaseInstanceEngine.postgres(
+#                 version=rds.PostgresEngineVersion.VER_12
+#             ),
+#             instance_type=ec2.InstanceType.of(
+#                 ec2.InstanceClass.BURSTABLE3,
+#                 ec2.InstanceSize.LARGE
+#             ),
+#             database_name=f"outlier_{self.environment}",
+#
+#             # Network Settings
+#             vpc=vpc,
+#             subnet_group=self.subnet_group,
+#             security_groups=rds_security_groups,
+#             multi_az=False,
+#             publicly_accessible=False,
+#
+#             # Storage Settings
+#             storage_type=rds.StorageType.GP3,
+#             allocated_storage=125,
+#             storage_encrypted=True,
+#
+#             # Backup Settings
+#             backup_retention=cdk.Duration.days(7),
+#             preferred_backup_window="06:17-06:47",
+#             preferred_maintenance_window="sun:06:51-sun:07:21",
+#             auto_minor_version_upgrade=False,
+#             delete_automated_backups=True,
+#
+#             # Monitoring Settings
+#             enable_performance_insights=False,
+#             cloudwatch_logs_exports=["postgresql", "upgrade"],
+#             monitoring_interval=cdk.Duration.seconds(0),
+#
+#             # Other Settings
+#             deletion_protection=False,
+#             copy_tags_to_snapshot=False,
+#             parameters={
+#                 # Using default parameter group
+#             },
+#
+#             # Credentials - We'll use Secrets Manager in production
+#             credentials=rds.Credentials.from_generated_secret(
+#                 username="postgres",
+#                 secret_name=f"outlier-{self.environment}-db-credentials-test"
+#             )
+#         )
 
         # Add tags
         cdk.Tags.of(self.db_instance).add("env", self.environment)
