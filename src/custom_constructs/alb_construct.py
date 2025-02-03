@@ -42,7 +42,7 @@ class AlbConstruct(BaseConstruct):
         self._service_target_group = elbv2.ApplicationTargetGroup(
             self,
             "ServiceTargetGroup",
-            target_group_name=f"outlier-service-tg-2-{self.environment}-test",
+            target_group_name=f"out-main-svc-tg-2-{self.environment}-test",
             vpc=vpc,
             port=80,
             protocol=elbv2.ApplicationProtocol.HTTP,
@@ -58,7 +58,7 @@ class AlbConstruct(BaseConstruct):
         self._jobs_target_group = elbv2.ApplicationTargetGroup(
             self,
             "JobsTargetGroup",
-            target_group_name=f"outlier-job-service-tg-1-{self.environment}-test",
+            target_group_name=f"out-job-svc-tg-1-{self.environment}-test",
             vpc=vpc,
             port=80,
             protocol=elbv2.ApplicationProtocol.HTTP,
