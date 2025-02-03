@@ -52,7 +52,6 @@ def github_cicd(gh, account, env, python_version):
                         "with": {
                             "virtualenvs-create": "true",
                             "virtualenvs-in-project": "true",
-                            "prefer-active-python": "true",
                         },
                     },
                     {
