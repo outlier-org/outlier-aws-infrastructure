@@ -5,7 +5,7 @@ from custom_constructs.storage_construct import StorageConstruct
 from custom_constructs.iam_construct import IamConstruct
 from custom_constructs.ecr_construct import EcrConstruct
 from custom_constructs.alb_construct import AlbConstruct
-# from custom_constructs.ecs_construct import EcsConstruct
+from custom_constructs.ecs_construct import EcsConstruct
 # from custom_constructs.pipeline_construct import CodePipelineConstruct
 # from custom_constructs.database_construct import DatabaseConstruct
 
@@ -49,14 +49,14 @@ class BaseStack(cdk.Stack):
         )
 
         # Create ECS resources (commented until ready)
-        # ecs = EcsConstruct(
-        #     self,
-        #     "EcsConstruct",
-        #     vpc=network.vpc,
-        #     security_groups=[network.service_security_group],
-        #     service_target_groups=[alb.service_tg_1, alb.service_tg_2],
-        #     jobs_target_groups=[alb.jobs_tg_1, alb.jobs_tg_2]
-        # )
+        ecs = EcsConstruct(
+            self,
+            "EcsConstruct",
+            vpc=network.vpc,
+            security_groups=[network.service_security_group],
+            service_target_groups=[alb.service_tg_1, alb.service_tg_2],
+            jobs_target_groups=[alb.jobs_tg_1, alb.jobs_tg_2]
+        )
 
         # Create Pipeline resources (commented until ready)
         # pipeline = CodePipelineConstruct(
