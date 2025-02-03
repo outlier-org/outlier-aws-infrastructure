@@ -16,10 +16,16 @@ class DatabaseConstruct(BaseConstruct):
             subnet_group_name="outlier-nightly-subnet-group",
             description="Subnet group for outlier nightly RDS",
             vpc_subnets=ec2.SubnetSelection(
-                subnet_ids=[
-                    "subnet-0a92401d83e646775",
-                    "subnet-031293b41be863713",
-                    "subnet-0105fa1e5a7b370c4"
+                subnets=[
+                    ec2.Subnet.from_subnet_id(
+                        self,
+                        f"Subnet{i}",
+                        subnet_id
+                    ) for i, subnet_id in enumerate([
+                        "subnet-0a92401d83e646775",
+                        "subnet-031293b41be863713",
+                        "subnet-0105fa1e5a7b370c4"
+                    ])
                 ]
             )
         )
