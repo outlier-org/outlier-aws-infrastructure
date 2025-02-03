@@ -21,9 +21,12 @@ class EcsConstruct(BaseConstruct):
             self,
             "EcsCluster",
             cluster_name=f"outlier-service-cluster-{self.environment}-test",
-            vpc=vpc,
-            capacity_providers=["FARGATE", "FARGATE_SPOT"]
+            vpc=vpc
         )
+
+        # Add capacity providers (just once, right after cluster creation)
+        self._cluster.add_capacity_provider("FARGATE")
+        self._cluster.add_capacity_provider("FARGATE_SPOT")
 
         # Main Service
         self._service = ecs.FargateService(
