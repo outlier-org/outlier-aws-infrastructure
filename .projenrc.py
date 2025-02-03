@@ -66,6 +66,7 @@ project = AwsCdkPythonApp(
             "sdist/",
             "var/",
             "venv/",
+            "former_2_output.py",
         ],
     },
 )
