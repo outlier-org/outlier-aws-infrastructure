@@ -9,7 +9,7 @@ class BaseStack(cdk.Stack):
 
         # ↓↓ instantiate your constructs here ↓↓
 
-        
+
         # Create network resources
         network = NetworkConstruct(self, "NetworkConstruct")
 
