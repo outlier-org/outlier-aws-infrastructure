@@ -23,16 +23,18 @@ class EcsConstruct(BaseConstruct):
         )
 
         # Import existing task definitions
-        service_task_def = ecs.TaskDefinition.from_task_definition_arn(
+        service_task_def = ecs.TaskDefinition.from_task_definition_attributes(
             self,
             "ServiceTaskDef",
-            "arn:aws:ecs:us-east-1:528757783796:task-definition/Outlier-Service-Task-nightly:16"
+            task_definition_arn="arn:aws:ecs:us-east-1:528757783796:task-definition/Outlier-Service-Task-nightly:16",
+            compatibility=ecs.Compatibility.FARGATE
         )
 
-        jobs_task_def = ecs.TaskDefinition.from_task_definition_arn(
+        jobs_task_def = ecs.TaskDefinition.from_task_definition_attributes(
             self,
             "JobsServiceTaskDef",
-            "arn:aws:ecs:us-east-1:528757783796:task-definition/Outlier-job-task-nightly:16"
+            task_definition_arn="arn:aws:ecs:us-east-1:528757783796:task-definition/Outlier-job-task-nightly:16",
+            compatibility=ecs.Compatibility.FARGATE
         )
 
         # Main Service
