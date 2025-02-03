@@ -25,7 +25,7 @@ class AlbConstruct(BaseConstruct):
         )
 
         # Create ALB
-        self.load_balancer = elbv2.ApplicationLoadBalancer(
+        self._load_balancer = elbv2.ApplicationLoadBalancer(
             self,
             "ApplicationLoadBalancer",
             load_balancer_name=f"outlier-service-alb-{self.environment}-test",
@@ -39,7 +39,7 @@ class AlbConstruct(BaseConstruct):
         )
 
         # Create Target Groups
-        self.service_target_group = elbv2.ApplicationTargetGroup(
+        self._service_target_group = elbv2.ApplicationTargetGroup(
             self,
             "ServiceTargetGroup",
             target_group_name=f"outlier-service-tg-2-{self.environment}-test",
@@ -55,7 +55,7 @@ class AlbConstruct(BaseConstruct):
             deregistration_delay=cdk.Duration.seconds(300)
         )
 
-        self.jobs_target_group = elbv2.ApplicationTargetGroup(
+        self._jobs_target_group = elbv2.ApplicationTargetGroup(
             self,
             "JobsTargetGroup",
             target_group_name=f"outlier-job-service-tg-1-{self.environment}-test",
@@ -72,19 +72,19 @@ class AlbConstruct(BaseConstruct):
         )
 
         # Add HTTP Listener
-        http_listener = self.load_balancer.add_listener(
+        http_listener = self._load_balancer.add_listener(
             "HttpListener",
             port=80,
-            default_target_groups=[self.service_target_group]
+            default_target_groups=[self._service_target_group]
         )
 
         # Add HTTPS Listener
-        https_listener = self.load_balancer.add_listener(
+        https_listener = self._load_balancer.add_listener(
             "HttpsListener",
             port=443,
             certificates=[certificate],
             ssl_policy=elbv2.SslPolicy.TLS13_1_2_2021_06,
-            default_target_groups=[self.service_target_group]
+            default_target_groups=[self._service_target_group]
         )
 
         # Add listener rules for jobs
@@ -99,7 +99,7 @@ class AlbConstruct(BaseConstruct):
                     "/test-cron/*"
                 ])
             ],
-            target_groups=[self.jobs_target_group]
+            target_groups=[self._jobs_target_group]
         )
 
         https_listener.add_target_groups(
@@ -113,7 +113,7 @@ class AlbConstruct(BaseConstruct):
                     "/script/*"
                 ])
             ],
-            target_groups=[self.jobs_target_group]
+            target_groups=[self._jobs_target_group]
         )
 
         # Add tags
@@ -121,9 +121,13 @@ class AlbConstruct(BaseConstruct):
         cdk.Tags.of(self).add("env", self.environment)
 
     @property
+    def load_balancer(self) -> elbv2.IApplicationLoadBalancer:
+        return self._load_balancer
+
+    @property
     def service_target_group(self) -> elbv2.IApplicationTargetGroup:
-        return self.service_target_group
+        return self._service_target_group
 
     @property
     def jobs_target_group(self) -> elbv2.IApplicationTargetGroup:
-        return self.jobs_target_group
+        return self._jobs_target_group
