@@ -56,7 +56,6 @@ class DatabaseConstruct(BaseConstruct):
             preferred_maintenance_window="sun:06:51-sun:07:21",
             auto_minor_version_upgrade=False,
             deletion_protection=False,
-            remove_automated_backups=True,
             copy_tags_to_snapshot=False,
             cloudwatch_logs_exports=["postgresql", "upgrade"],
             enable_performance_insights=False,

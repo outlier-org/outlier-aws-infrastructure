@@ -19,25 +19,10 @@ class BaseStack(cdk.Stack):
         self.rds_sg = network.rds_security_group
         self.secrets_sg = network.secrets_manager_security_group
 
-        # Create outlier_nightly_ RDS database
+        # Create outlier_nightly RDS database
         database = DatabaseConstruct(
             self,
             "DatabaseConstruct",
             vpc=network.vpc,
             rds_security_groups=[network.rds_security_group]
-        )
-
-        # Outputs for CloudFormation Logging
-        cdk.CfnOutput(
-            self,
-            "DatabaseEndpoint",
-            value=database.db_endpoint,
-            description="RDS instance endpoint"
-        )
-
-        cdk.CfnOutput(
-            self,
-            "DatabasePort",
-            value=str(database.db_port),
-            description="RDS instance port"
         )
