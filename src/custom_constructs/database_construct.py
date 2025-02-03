@@ -28,7 +28,7 @@ class DatabaseConstruct(BaseConstruct):
             instance_identifier=f"outlier-{self.environment}-test",
             engine=rds.DatabaseInstanceEngine.postgres(
                 version=rds.PostgresEngineVersion.of('12.20')
-            )
+            ),
             instance_type=ec2.InstanceType.of(
                 ec2.InstanceClass.BURSTABLE3,
                 ec2.InstanceSize.LARGE
