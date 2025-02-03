@@ -1,3 +1,4 @@
+from aws_cdk import aws_ec2 as ec2
 from aws_cdk import aws_rds as rds
 import aws_cdk as cdk
 from constructs import Construct
