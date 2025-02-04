@@ -15,9 +15,15 @@ class EcsConstruct(BaseConstruct):
             vpc: ec2.IVpc,
             security_groups: list[ec2.ISecurityGroup],
             execution_role: iam.IRole,
-            task_role: iam.IRole
-    ):
+            task_role: iam.IRole,
+            service_target_group: elbv2.IApplicationTargetGroup,
+            jobs_target_group: elbv2.IApplicationTargetGroup
+        ):
         super().__init__(scope, id)
+
+        # Store the target groups
+        self.service_target_group = service_target_group
+        self.jobs_target_group = jobs_target_group
 
         # Create ECS Cluster
         self._cluster = ecs.Cluster(
@@ -131,13 +137,14 @@ class EcsConstruct(BaseConstruct):
             )
         )
 
-        # Attach load balancer target groups
+        # Attach load balancer target groups to main service
         self._service.attach_to_application_target_group(
-            target_group=alb.service_target_group
+            target_group=self.service_target_group
         )
 
+        # Attach load balancer target groups to jobs service
         self._jobs_service.attach_to_application_target_group(
-            target_group=alb.jobs_target_group
+            target_group=self.jobs_target_group
         )
 
     @property
