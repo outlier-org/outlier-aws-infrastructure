@@ -4,6 +4,7 @@ from aws_cdk import (
     aws_ec2 as ec2,
     aws_iam as iam,
     aws_elasticloadbalancingv2 as elbv2,
+    aws_ecr as ecr,
     Duration
 )
 from constructs import Construct
