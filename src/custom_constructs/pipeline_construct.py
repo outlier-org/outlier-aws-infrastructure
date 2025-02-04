@@ -94,7 +94,6 @@ class CodePipelineConstruct(BaseConstruct):
                 )
             },
             timeout=Duration.minutes(60),
-            queue_timeout=Duration.minutes(480),
             cache=codebuild.Cache.local(codebuild.LocalCacheMode.DOCKER_LAYER)
         )
 
