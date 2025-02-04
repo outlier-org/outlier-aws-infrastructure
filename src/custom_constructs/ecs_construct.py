@@ -34,7 +34,7 @@ class EcsConstruct(BaseConstruct):
         # Enable Fargate capacity providers
         self._cluster.enable_fargate_capacity_providers()
 
-        # Create the main service task definition
+        # Main Service Task Definition
         service_task_def = ecs.FargateTaskDefinition(
             self,
             "ServiceTaskDef",
@@ -48,7 +48,7 @@ class EcsConstruct(BaseConstruct):
         service_container = service_task_def.add_container(
             "ServiceContainer",
             container_name=f"Outlier-Service-Container-{self.environment}-test",
-            image=ecs.ContainerImage.from_registry("amazon/amazon-ecs-sample"),
+            image=ecs.ContainerImage.from_registry("amazon/amazon-ecs-sample"),  # Placeholder
             cpu=3072,
             memory_limit_mib=6144,
             logging=ecs.LogDriver.aws_logs(
@@ -58,10 +58,13 @@ class EcsConstruct(BaseConstruct):
         )
 
         service_container.add_port_mappings(
-            ecs.PortMapping(container_port=1337, protocol=ecs.Protocol.TCP)
+            ecs.PortMapping(
+                container_port=1337,
+                protocol=ecs.Protocol.TCP
+            )
         )
 
-        # Create the jobs service task definition
+        # Jobs Service Task Definition
         jobs_task_def = ecs.FargateTaskDefinition(
             self,
             "JobsTaskDef",
@@ -75,7 +78,7 @@ class EcsConstruct(BaseConstruct):
         jobs_container = jobs_task_def.add_container(
             "JobsContainer",
             container_name=f"Outlier-Job-Container-{self.environment}-test",
-            image=ecs.ContainerImage.from_registry("amazon/amazon-ecs-sample"),
+            image=ecs.ContainerImage.from_registry("amazon/amazon-ecs-sample"),  # Placeholder
             cpu=3072,
             memory_limit_mib=6144,
             logging=ecs.LogDriver.aws_logs(
@@ -85,7 +88,10 @@ class EcsConstruct(BaseConstruct):
         )
 
         jobs_container.add_port_mappings(
-            ecs.PortMapping(container_port=1337, protocol=ecs.Protocol.TCP)
+            ecs.PortMapping(
+                container_port=1337,
+                protocol=ecs.Protocol.TCP
+            )
         )
 
         # Create the main service
