@@ -61,7 +61,7 @@ class EcsConstruct(BaseConstruct):
                 "interval": Duration.seconds(30),
                 "timeout": Duration.seconds(5),
                 "retries": 3,
-                "startPeriod": Duration.seconds(60)
+                "start_period": Duration.seconds(60)
             }
         )
 
@@ -93,7 +93,7 @@ class EcsConstruct(BaseConstruct):
                 "interval": Duration.seconds(30),
                 "timeout": Duration.seconds(5),
                 "retries": 3,
-                "startPeriod": Duration.seconds(60)
+                "start_period": Duration.seconds(60)
             }
         )
 
