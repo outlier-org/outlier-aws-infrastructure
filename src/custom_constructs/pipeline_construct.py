@@ -110,7 +110,7 @@ class CodePipelineConstruct(BaseConstruct):
             application_name=f"outlier-jobs-codedeploy-{self.environment}-test"
         )
 
-        # Deployment Groups
+        # In pipeline_construct.py, modify the deployment group configuration:
         service_deployment_group = codedeploy.EcsDeploymentGroup(
             self,
             "ServiceDeploymentGroup",
@@ -124,13 +124,11 @@ class CodePipelineConstruct(BaseConstruct):
                 blue_target_group=service_target_groups[0],
                 green_target_group=service_target_groups[1],
                 deployment_approval_wait_time=Duration.minutes(0),
-                terminate_blue_tasks_on_deployment_success=codedeploy.EcsBlueGreenDeploymentTerminationConfig(
-                    action=codedeploy.EcsBlueGreenTerminationAction.TERMINATE,
-                    termination_wait_time=Duration.minutes(5)
-                )
+                termination_wait_time=Duration.minutes(5)  # This is part of the main config
             )
         )
 
+        # And similarly for the jobs deployment group:
         jobs_deployment_group = codedeploy.EcsDeploymentGroup(
             self,
             "JobsDeploymentGroup",
@@ -144,10 +142,7 @@ class CodePipelineConstruct(BaseConstruct):
                 blue_target_group=jobs_target_groups[0],
                 green_target_group=jobs_target_groups[1],
                 deployment_approval_wait_time=Duration.minutes(0),
-                terminate_blue_tasks_on_deployment_success=codedeploy.EcsBlueGreenDeploymentTerminationConfig(
-                    action=codedeploy.EcsBlueGreenTerminationAction.TERMINATE,
-                    termination_wait_time=Duration.minutes(5)
-                )
+                termination_wait_time=Duration.minutes(5)
             )
         )
 
