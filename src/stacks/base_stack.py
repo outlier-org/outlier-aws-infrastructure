@@ -41,12 +41,29 @@ class BaseStack(cdk.Stack):
             subnets=network.vpc.public_subnets
         )
 
-        # Create ECS resources (no target groups - CodeDeploy will handle)
+        # Create ECS resources
         ecs = EcsConstruct(
             self,
             "EcsConstruct",
             vpc=network.vpc,
-            security_groups=[network.service_security_group]
+            security_groups=[network.service_security_group],
+            execution_role=iam.task_execution_role,
+            task_role=iam.task_role
+        )
+
+        # Add Task Definition ARN outputs
+        cdk.CfnOutput(
+            self,
+            "ServiceTaskDefinitionArn",
+            value=ecs.service.task_definition.task_definition_arn,
+            description="Service Task Definition ARN"
+        )
+
+        cdk.CfnOutput(
+            self,
+            "JobsTaskDefinitionArn",
+            value=ecs.jobs_service.task_definition.task_definition_arn,
+            description="Jobs Task Definition ARN"
         )
 
         # Create Pipeline resources (commented until ready)
