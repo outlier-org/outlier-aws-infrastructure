@@ -48,7 +48,9 @@ class BaseStack(cdk.Stack):
             vpc=network.vpc,
             security_groups=[network.service_security_group],
             execution_role=iam.task_execution_role,
-            task_role=iam.task_role
+            task_role=iam.task_role,
+            service_target_group=alb.service_tg_1,
+            jobs_target_group=alb.jobs_tg_1
         )
 
         # Add Task Definition ARN outputs

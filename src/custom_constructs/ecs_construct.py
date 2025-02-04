@@ -2,6 +2,7 @@
 from aws_cdk import aws_ecs as ecs
 from aws_cdk import aws_ec2 as ec2
 from aws_cdk import aws_iam as iam
+from aws_cdk import aws_elasticloadbalancingv2 as elbv2
 import aws_cdk as cdk
 from constructs import Construct
 from .base_construct import BaseConstruct
@@ -26,6 +27,10 @@ class EcsConstruct(BaseConstruct):
             vpc=vpc
         )
 
+        # Add capacity providers
+        self._cluster.add_capacity_provider("FARGATE")
+        self._cluster.add_capacity_provider("FARGATE_SPOT")
+
         # Main Service Task Definition
         service_task_def = ecs.FargateTaskDefinition(
             self,
@@ -37,13 +42,23 @@ class EcsConstruct(BaseConstruct):
             task_role=task_role
         )
 
-        service_task_def.add_container(
+        service_container = service_task_def.add_container(
             "ServiceContainer",
             container_name=f"Outlier-Service-Container-{self.environment}-test",
             image=ecs.ContainerImage.from_registry("amazon/amazon-ecs-sample"),  # Placeholder
             cpu=3072,
             memory_limit_mib=6144,
-            port_mappings=[ecs.PortMapping(container_port=1337)]
+            logging=ecs.LogDriver.aws_logs(
+                stream_prefix="ecs",
+                log_group=f"/ecs/Outlier-Service-{self.environment}-test"
+            )
+        )
+
+        service_container.add_port_mappings(
+            ecs.PortMapping(
+                container_port=1337,
+                protocol=ecs.Protocol.TCP
+            )
         )
 
         # Jobs Service Task Definition
@@ -57,13 +72,23 @@ class EcsConstruct(BaseConstruct):
             task_role=task_role
         )
 
-        jobs_task_def.add_container(
+        jobs_container = jobs_task_def.add_container(
             "JobsContainer",
             container_name=f"Outlier-Job-Container-{self.environment}-test",
             image=ecs.ContainerImage.from_registry("amazon/amazon-ecs-sample"),  # Placeholder
             cpu=3072,
             memory_limit_mib=6144,
-            port_mappings=[ecs.PortMapping(container_port=1337)]
+            logging=ecs.LogDriver.aws_logs(
+                stream_prefix="ecs",
+                log_group=f"/ecs/Outlier-job-{self.environment}-test"
+            )
+        )
+
+        jobs_container.add_port_mappings(
+            ecs.PortMapping(
+                container_port=1337,
+                protocol=ecs.Protocol.TCP
+            )
         )
 
         # Main Service
@@ -104,6 +129,15 @@ class EcsConstruct(BaseConstruct):
             deployment_controller=ecs.DeploymentController(
                 type=ecs.DeploymentControllerType.CODE_DEPLOY
             )
+        )
+
+        # Attach load balancer target groups
+        self._service.attach_to_application_target_group(
+            target_group=alb.service_target_group
+        )
+
+        self._jobs_service.attach_to_application_target_group(
+            target_group=alb.jobs_target_group
         )
 
     @property
