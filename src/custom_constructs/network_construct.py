@@ -120,6 +120,14 @@ class NetworkConstruct(BaseConstruct):
 
     def create_vpc_endpoints(self):
         """Create VPC Endpoints for AWS services"""
+
+        # Get private route tables from the private subnets
+        private_subnet_ids = [subnet.subnet_id for subnet in self.vpc.private_subnets]
+        private_route_table_ids = [
+            private_subnet.route_table.route_table_id
+            for private_subnet in self.vpc.private_subnets
+        ]
+
         # S3 Gateway Endpoint
         self.s3_gateway_endpoint = ec2.CfnVPCEndpoint(
             self,
@@ -128,7 +136,7 @@ class NetworkConstruct(BaseConstruct):
             vpc_id=self.vpc.vpc_id,
             service_name="com.amazonaws.us-east-1.s3",
             policy_document="{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":\"*\",\"Action\":\"*\",\"Resource\":\"*\"}]}",
-            route_table_ids=[rt.route_table_id for rt in self.vpc.private_route_tables],
+            route_table_ids=private_route_table_ids,
             private_dns_enabled=False
         )
 
@@ -140,7 +148,7 @@ class NetworkConstruct(BaseConstruct):
             vpc_id=self.vpc.vpc_id,
             service_name="com.amazonaws.us-east-1.dynamodb",
             policy_document="{\"Version\":\"2008-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":\"*\",\"Action\":\"*\",\"Resource\":\"*\"}]}",
-            route_table_ids=[rt.route_table_id for rt in self.vpc.private_route_tables],
+            route_table_ids=private_route_table_ids,
             private_dns_enabled=False
         )
 
@@ -165,7 +173,7 @@ class NetworkConstruct(BaseConstruct):
             vpc_id=self.vpc.vpc_id,
             service_name="com.amazonaws.us-east-1.ecr.api",
             policy_document='''{"Statement":[{"Action":"*","Effect":"Allow","Principal":"*","Resource":"*"}]}''',
-            subnet_ids=[subnet.subnet_id for subnet in self.vpc.private_subnets],
+            subnet_ids=private_subnet_ids,
             private_dns_enabled=True,
             security_group_ids=[self.service_sg.security_group_id]
         )
@@ -178,7 +186,7 @@ class NetworkConstruct(BaseConstruct):
             vpc_id=self.vpc.vpc_id,
             service_name="com.amazonaws.us-east-1.ecr.dkr",
             policy_document='''{"Statement":[{"Action":"*","Effect":"Allow","Principal":"*","Resource":"*"}]}''',
-            subnet_ids=[subnet.subnet_id for subnet in self.vpc.private_subnets],
+            subnet_ids=private_subnet_ids,
             private_dns_enabled=True,
             security_group_ids=[self.service_sg.security_group_id]
         )
@@ -191,7 +199,7 @@ class NetworkConstruct(BaseConstruct):
             vpc_id=self.vpc.vpc_id,
             service_name="com.amazonaws.us-east-1.logs",
             policy_document='''{"Statement":[{"Action":"*","Effect":"Allow","Principal":"*","Resource":"*"}]}''',
-            subnet_ids=[subnet.subnet_id for subnet in self.vpc.private_subnets],
+            subnet_ids=private_subnet_ids,
             private_dns_enabled=True,
             security_group_ids=[self.service_sg.security_group_id]
         )
