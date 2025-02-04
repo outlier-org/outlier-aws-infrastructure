@@ -51,10 +51,6 @@ class EcsConstruct(BaseConstruct):
             image=ecs.ContainerImage.from_registry("amazon/amazon-ecs-sample"),  # Placeholder
             cpu=3072,
             memory_limit_mib=6144,
-            logging=ecs.LogDriver.aws_logs(
-                stream_prefix="ecs",
-                log_group=f"/ecs/Outlier-Service-{self.environment}-test"
-            )
         )
 
         service_container.add_port_mappings(
@@ -81,10 +77,6 @@ class EcsConstruct(BaseConstruct):
             image=ecs.ContainerImage.from_registry("amazon/amazon-ecs-sample"),  # Placeholder
             cpu=3072,
             memory_limit_mib=6144,
-            logging=ecs.LogDriver.aws_logs(
-                stream_prefix="ecs",
-                log_group=f"/ecs/Outlier-job-{self.environment}-test"
-            )
         )
 
         jobs_container.add_port_mappings(
