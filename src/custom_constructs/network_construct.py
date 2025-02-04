@@ -118,49 +118,83 @@ class NetworkConstruct(BaseConstruct):
             self.secrets_sg: secrets_name
         }
 
-        for sg, name in sg_names.items():
-            cdk.Tags.of(sg).add("env", self.environment)
-            cdk.Tags.of(sg).add("bounded_context", "outlier")
-            cdk.Tags.of(sg).add("Name", name)
-
     def create_vpc_endpoints(self):
         """Create VPC Endpoints for AWS services"""
-
-        # Gateway Endpoints (S3 and DynamoDB)
-        self.s3_endpoint = ec2.GatewayVpcEndpoint(
+        # S3 Gateway Endpoint
+        self.s3_gateway_endpoint = ec2.CfnVPCEndpoint(
             self,
-            "S3Endpoint",
-            vpc=self.vpc,
-            service=ec2.GatewayVpcEndpointAwsService.S3
+            "S3GatewayEndpoint-nightly",
+            vpc_endpoint_type="Gateway",
+            vpc_id=self.vpc.vpc_id,
+            service_name="com.amazonaws.us-east-1.s3",
+            policy_document="{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":\"*\",\"Action\":\"*\",\"Resource\":\"*\"}]}",
+            route_table_ids=[rt.route_table_id for rt in self.vpc.private_route_tables],
+            private_dns_enabled=False
         )
 
-        self.dynamodb_endpoint = ec2.GatewayVpcEndpoint(
+        # DynamoDB Gateway Endpoint
+        self.dynamodb_endpoint = ec2.CfnVPCEndpoint(
             self,
-            "DynamoDBEndpoint",
-            vpc=self.vpc,
-            service=ec2.GatewayVpcEndpointAwsService.DYNAMODB
+            "DynamoDBEndpoint-nightly",
+            vpc_endpoint_type="Gateway",
+            vpc_id=self.vpc.vpc_id,
+            service_name="com.amazonaws.us-east-1.dynamodb",
+            policy_document="{\"Version\":\"2008-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":\"*\",\"Action\":\"*\",\"Resource\":\"*\"}]}",
+            route_table_ids=[rt.route_table_id for rt in self.vpc.private_route_tables],
+            private_dns_enabled=False
         )
 
-        # Interface Endpoints
-        interface_endpoints = [
-            ("SecretsManagerEndpoint", ec2.InterfaceVpcEndpointAwsService.SECRETS_MANAGER),
-            ("EcrApiEndpoint", ec2.InterfaceVpcEndpointAwsService.ECR),
-            ("EcrDkrEndpoint", ec2.InterfaceVpcEndpointAwsService.ECR_DOCKER),
-            ("CloudWatchLogsEndpoint", ec2.InterfaceVpcEndpointAwsService.CLOUDWATCH_LOGS)
-        ]
+        # Secrets Manager Interface Endpoint
+        self.secrets_endpoint = ec2.CfnVPCEndpoint(
+            self,
+            "SecretsManagerEndpoint-nightly",
+            vpc_endpoint_type="Interface",
+            vpc_id=self.vpc.vpc_id,
+            service_name="com.amazonaws.us-east-1.secretsmanager",
+            policy_document='''{"Statement":[{"Action":"*","Effect":"Allow","Principal":"*","Resource":"*"}]}''',
+            subnet_ids=[subnet.subnet_id for subnet in self.vpc.private_subnets],
+            private_dns_enabled=True,
+            security_group_ids=[self.service_sg.security_group_id]
+        )
 
-        for endpoint_id, service in interface_endpoints:
-            ec2.InterfaceVpcEndpoint(
-                self,
-                endpoint_id,
-                vpc=self.vpc,
-                service=service,
-                private_dns_enabled=True,
-                security_groups=[self.service_sg],
-                subnets=ec2.SubnetSelection(
-                    subnet_type=ec2.SubnetType.PRIVATE_WITH_EGRESS
-                )
-            )
+        # ECR API Interface Endpoint
+        self.ecr_api_endpoint = ec2.CfnVPCEndpoint(
+            self,
+            "EcrApiEndpoint-nightly",
+            vpc_endpoint_type="Interface",
+            vpc_id=self.vpc.vpc_id,
+            service_name="com.amazonaws.us-east-1.ecr.api",
+            policy_document='''{"Statement":[{"Action":"*","Effect":"Allow","Principal":"*","Resource":"*"}]}''',
+            subnet_ids=[subnet.subnet_id for subnet in self.vpc.private_subnets],
+            private_dns_enabled=True,
+            security_group_ids=[self.service_sg.security_group_id]
+        )
+
+        # ECR Docker Interface Endpoint
+        self.ecr_dkr_endpoint = ec2.CfnVPCEndpoint(
+            self,
+            "EcrDkrEndpoint-nightly",
+            vpc_endpoint_type="Interface",
+            vpc_id=self.vpc.vpc_id,
+            service_name="com.amazonaws.us-east-1.ecr.dkr",
+            policy_document='''{"Statement":[{"Action":"*","Effect":"Allow","Principal":"*","Resource":"*"}]}''',
+            subnet_ids=[subnet.subnet_id for subnet in self.vpc.private_subnets],
+            private_dns_enabled=True,
+            security_group_ids=[self.service_sg.security_group_id]
+        )
+
+        # CloudWatch Logs Interface Endpoint
+        self.logs_endpoint = ec2.CfnVPCEndpoint(
+            self,
+            "CloudWatchLogsEndpoint-nightly",
+            vpc_endpoint_type="Interface",
+            vpc_id=self.vpc.vpc_id,
+            service_name="com.amazonaws.us-east-1.logs",
+            policy_document='''{"Statement":[{"Action":"*","Effect":"Allow","Principal":"*","Resource":"*"}]}''',
+            subnet_ids=[subnet.subnet_id for subnet in self.vpc.private_subnets],
+            private_dns_enabled=True,
+            security_group_ids=[self.service_sg.security_group_id]
+        )
 
     @property
     def alb_security_group(self) -> ec2.ISecurityGroup:
