@@ -46,26 +46,34 @@ class CodePipelineConstruct(BaseConstruct):
             removal_policy=cdk.RemovalPolicy.RETAIN
         )
 
-        # Pipeline Role with required permissions
+        # In pipeline_construct.py, modify pipeline role:
         pipeline_role = iam.Role(
             self,
             "PipelineRole",
             role_name=f"AWSCodePipelineServiceRole-{self.environment}-test",
-            assumed_by=iam.ServicePrincipal("codepipeline.amazonaws.com"),
-            managed_policies=[
-                iam.ManagedPolicy.from_aws_managed_policy_name("AWSCodePipelineServiceRole")
-            ]
+            assumed_by=iam.ServicePrincipal("codepipeline.amazonaws.com")
         )
 
+        # Add required permissions
         pipeline_role.add_to_policy(
             iam.PolicyStatement(
                 effect=iam.Effect.ALLOW,
                 actions=[
-                    "elasticloadbalancing:*",
-                    "ecs:*",
-                    "codedeploy:*",
                     "s3:*",
-                    "ecr:*"
+                    "codecommit:CancelUploadArchive",
+                    "codecommit:GetBranch",
+                    "codecommit:GetCommit",
+                    "codecommit:GetUploadArchiveStatus",
+                    "codecommit:UploadArchive",
+                    "codebuild:BatchGetBuilds",
+                    "codebuild:StartBuild",
+                    "codebuild:BatchGetBuildBatches",
+                    "codebuild:StartBuildBatch",
+                    "codedeploy:*",
+                    "ecs:*",
+                    "iam:PassRole",
+                    "ecr:*",
+                    "elasticloadbalancing:*"
                 ],
                 resources=["*"]
             )
