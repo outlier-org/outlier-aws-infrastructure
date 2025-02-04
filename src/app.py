@@ -20,5 +20,11 @@ BaseStack(app, f"BaseStack-{environment}", env=aws_environment)
 # Tag all resources in CloudFormation with the environment name
 cdk.Tags.of(app).add("Environment", environment)
 
+# Tag all resources in CloudFormation with the environment name
+cdk.Tags.of(app).add("aws-cdk-managed", True)
+
+# Tag all resources in CloudFormation with the environment name
+cdk.Tags.of(app).add("Project", "outlier-aws-infrastructure")
+
 # Synthesize the CDK app
 app.synth()
