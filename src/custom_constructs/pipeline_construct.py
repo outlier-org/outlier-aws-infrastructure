@@ -23,7 +23,6 @@ class CodePipelineConstruct(BaseConstruct):
             ecs_cluster: ecs.ICluster,
             ecs_service: ecs.IService,
             ecs_jobs_service: ecs.IService,
-            ecr_repository: ecr.IRepository,
             prod_listener: elbv2.IApplicationListener,
             test_listener: elbv2.IApplicationListener,
             service_target_groups: list[elbv2.IApplicationTargetGroup],
@@ -31,7 +30,23 @@ class CodePipelineConstruct(BaseConstruct):
     ):
         super().__init__(scope, id)
 
-        # Pipeline Role with extended permissions
+        # Create ECR Repository
+        self.repository = ecr.Repository(
+            self,
+            "OutlierEcr",
+            repository_name=f"outlier-ecr-{self.environment}-test",
+            lifecycle_rules=[
+                ecr.LifecycleRule(
+                    description="Keep only 10 images",
+                    max_image_count=10,
+                    rule_priority=1,
+                    tag_status=ecr.TagStatus.ANY
+                )
+            ],
+            removal_policy=cdk.RemovalPolicy.RETAIN
+        )
+
+        # Pipeline Role with required permissions
         pipeline_role = iam.Role(
             self,
             "PipelineRole",
@@ -42,7 +57,6 @@ class CodePipelineConstruct(BaseConstruct):
             ]
         )
 
-        # Add ALB permissions to Pipeline Role
         pipeline_role.add_to_policy(
             iam.PolicyStatement(
                 effect=iam.Effect.ALLOW,
@@ -70,7 +84,7 @@ class CodePipelineConstruct(BaseConstruct):
             ),
             environment_variables={
                 "REPOSITORY_URI": codebuild.BuildEnvironmentVariable(
-                    value=f"{self.account}.dkr.ecr.{self.region}.amazonaws.com/{ecr_repository.repository_name}"
+                    value=f"{self.account}.dkr.ecr.{self.region}.amazonaws.com/{self.repository.repository_name}"
                 ),
                 "SERVICE_NAME": codebuild.BuildEnvironmentVariable(
                     value=f"outlier-service-{self.environment}-test"
@@ -97,7 +111,7 @@ class CodePipelineConstruct(BaseConstruct):
             application_name=f"outlier-jobs-codedeploy-{self.environment}-test"
         )
 
-        # CodeDeploy Deployment Groups with blue-green config
+        # Deployment Groups
         service_deployment_group = codedeploy.EcsDeploymentGroup(
             self,
             "ServiceDeploymentGroup",
@@ -149,14 +163,13 @@ class CodePipelineConstruct(BaseConstruct):
             encryption=s3.BucketEncryption.S3_MANAGED
         )
 
-        # Pipeline
+        # Pipeline Setup
         self.pipeline = codepipeline.Pipeline(
             self,
             "Pipeline",
             pipeline_name=f"outlier-service-codepipeline-{self.environment}-test",
             role=pipeline_role,
-            artifact_bucket=artifact_bucket,
-            cross_account_keys=False
+            artifact_bucket=artifact_bucket
         )
 
         source_output = codepipeline.Artifact("SourceArtifact")
@@ -167,7 +180,7 @@ class CodePipelineConstruct(BaseConstruct):
             action_name="Source",
             owner="outlier-org",
             repo="outlier-api",
-            branch="nightly-aws-infra-changes",
+            branch=f"{self.environment}-aws-infra-changes",
             connection_arn="arn:aws:codestar-connections:us-east-1:528757783796:connection/ddd91232-5089-40b4-bc84-7ba9e4d1c20f",
             output=source_output,
             trigger_on_push=True
@@ -182,8 +195,7 @@ class CodePipelineConstruct(BaseConstruct):
             action_name="Build",
             project=build_project,
             input=source_output,
-            outputs=[build_output],
-            run_order=1
+            outputs=[build_output]
         )
         self.pipeline.add_stage(
             stage_name="Build",
@@ -237,3 +249,7 @@ class CodePipelineConstruct(BaseConstruct):
             stage_name="Deploy",
             actions=[service_deploy_action, jobs_deploy_action]
         )
+
+    @property
+    def ecr_repository(self) -> ecr.IRepository:
+        return self.repository
