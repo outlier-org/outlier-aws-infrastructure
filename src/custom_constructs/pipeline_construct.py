@@ -199,7 +199,6 @@ class CodePipelineConstruct(BaseConstruct):
         # Deploy Stage
         service_deploy_action = codepipeline_actions.CodeDeployEcsDeployAction(
             action_name="OutlierServiceDeployment",
-            service=ecs_service,
             deployment_group=service_deployment_group,
             app_spec_template_file=codepipeline.ArtifactPath(
                 build_output,
@@ -220,7 +219,6 @@ class CodePipelineConstruct(BaseConstruct):
 
         jobs_deploy_action = codepipeline_actions.CodeDeployEcsDeployAction(
             action_name="OutlierJobDeployment",
-            service=ecs_jobs_service,
             deployment_group=jobs_deployment_group,
             app_spec_template_file=codepipeline.ArtifactPath(
                 build_output,
