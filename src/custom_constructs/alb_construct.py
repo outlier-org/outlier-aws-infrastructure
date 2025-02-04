@@ -44,7 +44,7 @@ class AlbConstruct(BaseConstruct):
             "ServiceTargetGroup1",
             target_group_name=f"out-main-tg-1-{self.environment}-test",
             vpc=vpc,
-            port=80,
+            port=1337,
             protocol=elbv2.ApplicationProtocol.HTTP,
             target_type=elbv2.TargetType.IP,
             health_check=elbv2.HealthCheck(
@@ -60,7 +60,7 @@ class AlbConstruct(BaseConstruct):
             "ServiceTargetGroup2",
             target_group_name=f"out-main-tg-2-{self.environment}-test",
             vpc=vpc,
-            port=80,
+            port=1337,
             protocol=elbv2.ApplicationProtocol.HTTP,
             target_type=elbv2.TargetType.IP,
             health_check=elbv2.HealthCheck(
@@ -77,7 +77,7 @@ class AlbConstruct(BaseConstruct):
             "JobsTargetGroup1",
             target_group_name=f"out-jobs-tg-1-{self.environment}-test",
             vpc=vpc,
-            port=80,
+            port=1337,
             protocol=elbv2.ApplicationProtocol.HTTP,
             target_type=elbv2.TargetType.IP,
             health_check=elbv2.HealthCheck(
@@ -93,7 +93,7 @@ class AlbConstruct(BaseConstruct):
             "JobsTargetGroup2",
             target_group_name=f"out-jobs-tg-2-{self.environment}-test",
             vpc=vpc,
-            port=80,
+            port=1337,
             protocol=elbv2.ApplicationProtocol.HTTP,
             target_type=elbv2.TargetType.IP,
             health_check=elbv2.HealthCheck(
