@@ -38,21 +38,23 @@ class AlbConstruct(BaseConstruct):
             deletion_protection=False
         )
 
-        # Create Main Service Target Groups
+        # Create Main Service Target Groups - Updated port and health check
         self._service_tg_1 = elbv2.ApplicationTargetGroup(
             self,
             "ServiceTargetGroup1",
             target_group_name=f"out-main-tg-1-{self.environment}-test",
             vpc=vpc,
-            port=1337,
+            port=80,  # Changed to match nginx port
             protocol=elbv2.ApplicationProtocol.HTTP,
             target_type=elbv2.TargetType.IP,
             health_check=elbv2.HealthCheck(
-                path="/health",
+                path="/",  # Changed to root path for nginx
                 healthy_http_codes="200-499",
-                interval=cdk.Duration.seconds(30)
+                interval=cdk.Duration.seconds(30),
+                healthy_threshold_count=2,  # Added for faster stabilization
+                unhealthy_threshold_count=2
             ),
-            deregistration_delay=cdk.Duration.seconds(300)
+            deregistration_delay=cdk.Duration.seconds(30)  # Reduced for faster updates
         )
 
         self._service_tg_2 = elbv2.ApplicationTargetGroup(
@@ -60,32 +62,36 @@ class AlbConstruct(BaseConstruct):
             "ServiceTargetGroup2",
             target_group_name=f"out-main-tg-2-{self.environment}-test",
             vpc=vpc,
-            port=1337,
+            port=80,  # Changed to match nginx port
             protocol=elbv2.ApplicationProtocol.HTTP,
             target_type=elbv2.TargetType.IP,
             health_check=elbv2.HealthCheck(
-                path="/health",
+                path="/",  # Changed to root path for nginx
                 healthy_http_codes="200-499",
-                interval=cdk.Duration.seconds(30)
+                interval=cdk.Duration.seconds(30),
+                healthy_threshold_count=2,
+                unhealthy_threshold_count=2
             ),
-            deregistration_delay=cdk.Duration.seconds(300)
+            deregistration_delay=cdk.Duration.seconds(30)
         )
 
-        # Create Jobs Service Target Groups
+        # Create Jobs Service Target Groups - Updated port and health check
         self._jobs_tg_1 = elbv2.ApplicationTargetGroup(
             self,
             "JobsTargetGroup1",
             target_group_name=f"out-jobs-tg-1-{self.environment}-test",
             vpc=vpc,
-            port=1337,
+            port=80,  # Changed to match nginx port
             protocol=elbv2.ApplicationProtocol.HTTP,
             target_type=elbv2.TargetType.IP,
             health_check=elbv2.HealthCheck(
-                path="/health",
+                path="/",  # Changed to root path for nginx
                 healthy_http_codes="200-499",
-                interval=cdk.Duration.seconds(30)
+                interval=cdk.Duration.seconds(30),
+                healthy_threshold_count=2,
+                unhealthy_threshold_count=2
             ),
-            deregistration_delay=cdk.Duration.seconds(300)
+            deregistration_delay=cdk.Duration.seconds(30)
         )
 
         self._jobs_tg_2 = elbv2.ApplicationTargetGroup(
@@ -93,25 +99,26 @@ class AlbConstruct(BaseConstruct):
             "JobsTargetGroup2",
             target_group_name=f"out-jobs-tg-2-{self.environment}-test",
             vpc=vpc,
-            port=1337,
+            port=80,  # Changed to match nginx port
             protocol=elbv2.ApplicationProtocol.HTTP,
             target_type=elbv2.TargetType.IP,
             health_check=elbv2.HealthCheck(
-                path="/health",
+                path="/",  # Changed to root path for nginx
                 healthy_http_codes="200-499",
-                interval=cdk.Duration.seconds(30)
+                interval=cdk.Duration.seconds(30),
+                healthy_threshold_count=2,
+                unhealthy_threshold_count=2
             ),
-            deregistration_delay=cdk.Duration.seconds(300)
+            deregistration_delay=cdk.Duration.seconds(30)
         )
 
-        # Add HTTP Listener (defaults to service tg 1)
+        # Rest of the construct remains the same...
         http_listener = self._load_balancer.add_listener(
             "HttpListener",
             port=80,
             default_target_groups=[self._service_tg_1]
         )
 
-        # Add HTTPS Listener (defaults to service tg 1)
         https_listener = self._load_balancer.add_listener(
             "HttpsListener",
             port=443,
