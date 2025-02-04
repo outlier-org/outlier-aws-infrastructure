@@ -8,6 +8,7 @@ from aws_cdk import (
 from constructs import Construct
 from .base_construct import BaseConstruct
 
+
 class EcsConstruct(BaseConstruct):
     def __init__(
             self,
@@ -30,6 +31,7 @@ class EcsConstruct(BaseConstruct):
             vpc=vpc
         )
 
+        # Enable Fargate capacity providers
         self._cluster.enable_fargate_capacity_providers()
 
         # Main Service Task Definition
@@ -43,29 +45,22 @@ class EcsConstruct(BaseConstruct):
             task_role=task_role
         )
 
-        # Using nginx as a test image that will respond to health checks
         service_container = service_task_def.add_container(
             "ServiceContainer",
             container_name=f"Outlier-Service-Container-{self.environment}-test",
-            image=ecs.ContainerImage.from_registry("nginx:latest"),
+            image=ecs.ContainerImage.from_registry("amazon/amazon-ecs-sample"),  # Placeholder
             cpu=3072,
             memory_limit_mib=6144,
-            port_mappings=[
-                ecs.PortMapping(
-                    container_port=80,  # Changed to 80 for nginx
-                    protocol=ecs.Protocol.TCP
-                )
-            ],
-            health_check={
-                "command": ["CMD-SHELL", "curl -f http://localhost:80/ || exit 1"],
-                "interval": Duration.seconds(30),
-                "timeout": Duration.seconds(5),
-                "retries": 3,
-                "startPeriod": Duration.seconds(60)
-            }
         )
 
-        # Jobs Service Task Definition (similar changes)
+        service_container.add_port_mappings(
+            ecs.PortMapping(
+                container_port=1337,
+                protocol=ecs.Protocol.TCP
+            )
+        )
+
+        # Jobs Service Task Definition
         jobs_task_def = ecs.FargateTaskDefinition(
             self,
             "JobsTaskDef",
@@ -79,25 +74,19 @@ class EcsConstruct(BaseConstruct):
         jobs_container = jobs_task_def.add_container(
             "JobsContainer",
             container_name=f"Outlier-Job-Container-{self.environment}-test",
-            image=ecs.ContainerImage.from_registry("nginx:latest"),
+            image=ecs.ContainerImage.from_registry("amazon/amazon-ecs-sample"),  # Placeholder
             cpu=3072,
             memory_limit_mib=6144,
-            port_mappings=[
-                ecs.PortMapping(
-                    container_port=80,
-                    protocol=ecs.Protocol.TCP
-                )
-            ],
-            health_check={
-                "command": ["CMD-SHELL", "curl -f http://localhost:80/ || exit 1"],
-                "interval": Duration.seconds(30),
-                "timeout": Duration.seconds(5),
-                "retries": 3,
-                "startPeriod": Duration.seconds(60)
-            }
         )
 
-        # Create the main service without CodeDeploy initially
+        jobs_container.add_port_mappings(
+            ecs.PortMapping(
+                container_port=1337,
+                protocol=ecs.Protocol.TCP
+            )
+        )
+
+        # Create the main service
         self._service = ecs.FargateService(
             self,
             "Service",
@@ -109,8 +98,8 @@ class EcsConstruct(BaseConstruct):
             security_groups=security_groups,
             vpc_subnets=ec2.SubnetSelection(subnet_type=ec2.SubnetType.PRIVATE_WITH_EGRESS),
             assign_public_ip=False,
-            health_check_grace_period=Duration.seconds(60),  # Increased from 0
-            # Removed CODE_DEPLOY controller for initial deployment
+            health_check_grace_period=Duration.seconds(0),
+            deployment_controller=ecs.DeploymentController(type=ecs.DeploymentControllerType.CODE_DEPLOY)
         )
 
         # Create the jobs service
@@ -125,8 +114,8 @@ class EcsConstruct(BaseConstruct):
             security_groups=security_groups,
             vpc_subnets=ec2.SubnetSelection(subnet_type=ec2.SubnetType.PRIVATE_WITH_EGRESS),
             assign_public_ip=False,
-            health_check_grace_period=Duration.seconds(60),  # Increased from 0
-            # Removed CODE_DEPLOY controller for initial deployment
+            health_check_grace_period=Duration.seconds(0),
+            deployment_controller=ecs.DeploymentController(type=ecs.DeploymentControllerType.CODE_DEPLOY)
         )
 
         # Attach load balancer target groups
