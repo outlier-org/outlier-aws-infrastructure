@@ -38,7 +38,7 @@ class AlbConstruct(BaseConstruct):
             deletion_protection=False
         )
 
-        # Create Main Service Target Groups
+        # Create Main Service Target Groups with optimized health checks
         self._service_tg_1 = elbv2.ApplicationTargetGroup(
             self,
             "ServiceTargetGroup1",
@@ -50,9 +50,13 @@ class AlbConstruct(BaseConstruct):
             health_check=elbv2.HealthCheck(
                 path="/health",
                 healthy_http_codes="200-499",
-                interval=cdk.Duration.seconds(30)
+                interval=cdk.Duration.seconds(30),
+                timeout=cdk.Duration.seconds(5),
+                healthy_threshold_count=2,
+                unhealthy_threshold_count=2,
+                port="1337"
             ),
-            deregistration_delay=cdk.Duration.seconds(300)
+            deregistration_delay=cdk.Duration.seconds(30)  # Faster deregistration
         )
 
         self._service_tg_2 = elbv2.ApplicationTargetGroup(
@@ -66,12 +70,16 @@ class AlbConstruct(BaseConstruct):
             health_check=elbv2.HealthCheck(
                 path="/health",
                 healthy_http_codes="200-499",
-                interval=cdk.Duration.seconds(30)
+                interval=cdk.Duration.seconds(30),
+                timeout=cdk.Duration.seconds(5),
+                healthy_threshold_count=2,
+                unhealthy_threshold_count=2,
+                port="1337"
             ),
-            deregistration_delay=cdk.Duration.seconds(300)
+            deregistration_delay=cdk.Duration.seconds(30)
         )
 
-        # Create Jobs Service Target Groups
+        # Create Jobs Service Target Groups with optimized health checks
         self._jobs_tg_1 = elbv2.ApplicationTargetGroup(
             self,
             "JobsTargetGroup1",
@@ -83,9 +91,13 @@ class AlbConstruct(BaseConstruct):
             health_check=elbv2.HealthCheck(
                 path="/health",
                 healthy_http_codes="200-499",
-                interval=cdk.Duration.seconds(30)
+                interval=cdk.Duration.seconds(30),
+                timeout=cdk.Duration.seconds(5),
+                healthy_threshold_count=2,
+                unhealthy_threshold_count=2,
+                port="1337"
             ),
-            deregistration_delay=cdk.Duration.seconds(300)
+            deregistration_delay=cdk.Duration.seconds(30)
         )
 
         self._jobs_tg_2 = elbv2.ApplicationTargetGroup(
@@ -99,28 +111,40 @@ class AlbConstruct(BaseConstruct):
             health_check=elbv2.HealthCheck(
                 path="/health",
                 healthy_http_codes="200-499",
-                interval=cdk.Duration.seconds(30)
+                interval=cdk.Duration.seconds(30),
+                timeout=cdk.Duration.seconds(5),
+                healthy_threshold_count=2,
+                unhealthy_threshold_count=2,
+                port="1337"
             ),
-            deregistration_delay=cdk.Duration.seconds(300)
+            deregistration_delay=cdk.Duration.seconds(30)
         )
 
         # Add HTTP Listener (defaults to service tg 1)
-        http_listener = self._load_balancer.add_listener(
+        self._http_listener = self._load_balancer.add_listener(
             "HttpListener",
             port=80,
             default_target_groups=[self._service_tg_1]
         )
 
-        # Add HTTPS Listener (defaults to service tg 1)
-        https_listener = self._load_balancer.add_listener(
+        # Add HTTPS Listener (production traffic)
+        self._prod_listener = self._load_balancer.add_listener(
             "HttpsListener",
             port=443,
             certificates=[certificate],
             default_target_groups=[self._service_tg_1]
         )
 
-        # Add listener rules for jobs (using jobs tg 1 initially)
-        https_listener.add_target_groups(
+        # Add Test Listener (for blue/green test traffic)
+        self._test_listener = self._load_balancer.add_listener(
+            "TestListener",
+            port=8080,
+            protocol=elbv2.ApplicationProtocol.HTTP,
+            default_target_groups=[self._service_tg_1]
+        )
+
+        # Add production listener rules for jobs
+        self._prod_listener.add_target_groups(
             "CronRule",
             priority=1,
             conditions=[
@@ -134,8 +158,37 @@ class AlbConstruct(BaseConstruct):
             target_groups=[self._jobs_tg_1]
         )
 
-        https_listener.add_target_groups(
+        self._prod_listener.add_target_groups(
             "JobsRule",
+            priority=2,
+            conditions=[
+                elbv2.ListenerCondition.path_patterns([
+                    "/proctorio/send-monthly-report",
+                    "/set/active-campaign-tags",
+                    "/sync/airtable-active-campaign",
+                    "/script/*"
+                ])
+            ],
+            target_groups=[self._jobs_tg_1]
+        )
+
+        # Add test listener rules for jobs (mirror production rules)
+        self._test_listener.add_target_groups(
+            "TestCronRule",
+            priority=1,
+            conditions=[
+                elbv2.ListenerCondition.path_patterns([
+                    "/cron-script",
+                    "/cron-script/*",
+                    "/test-cron",
+                    "/test-cron/*"
+                ])
+            ],
+            target_groups=[self._jobs_tg_1]
+        )
+
+        self._test_listener.add_target_groups(
+            "TestJobsRule",
             priority=2,
             conditions=[
                 elbv2.ListenerCondition.path_patterns([
@@ -155,6 +208,14 @@ class AlbConstruct(BaseConstruct):
     @property
     def load_balancer(self) -> elbv2.IApplicationLoadBalancer:
         return self._load_balancer
+
+    @property
+    def production_listener(self) -> elbv2.IApplicationListener:
+        return self._prod_listener
+
+    @property
+    def test_listener(self) -> elbv2.IApplicationListener:
+        return self._test_listener
 
     @property
     def service_tg_1(self) -> elbv2.IApplicationTargetGroup:

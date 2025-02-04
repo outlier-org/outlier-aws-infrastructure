@@ -1,12 +1,16 @@
 # src/custom_constructs/pipeline_construct.py
-from aws_cdk import aws_codebuild as codebuild
-from aws_cdk import aws_codedeploy as codedeploy
-from aws_cdk import aws_codepipeline as codepipeline
-from aws_cdk import aws_codepipeline_actions as codepipeline_actions
-from aws_cdk import aws_iam as iam
-from aws_cdk import aws_ecs as ecs
-from aws_cdk import aws_ecr as ecr
-from aws_cdk import aws_s3 as s3
+from aws_cdk import (
+    aws_codebuild as codebuild,
+    aws_codedeploy as codedeploy,
+    aws_codepipeline as codepipeline,
+    aws_codepipeline_actions as codepipeline_actions,
+    aws_iam as iam,
+    aws_ecs as ecs,
+    aws_ecr as ecr,
+    aws_elasticloadbalancingv2 as elbv2,
+    aws_s3 as s3,
+    Duration
+)
 import aws_cdk as cdk
 from constructs import Construct
 from .base_construct import BaseConstruct
@@ -19,51 +23,65 @@ class CodePipelineConstruct(BaseConstruct):
             ecs_cluster: ecs.ICluster,
             ecs_service: ecs.IService,
             ecs_jobs_service: ecs.IService,
-            ecr_repository: ecr.IRepository
+            ecr_repository: ecr.IRepository,
+            prod_listener: elbv2.IApplicationListener,
+            test_listener: elbv2.IApplicationListener,
+            service_target_groups: list[elbv2.IApplicationTargetGroup],
+            jobs_target_groups: list[elbv2.IApplicationTargetGroup]
     ):
         super().__init__(scope, id)
 
-        # Pipeline Role
+        # Pipeline Role with extended permissions
         pipeline_role = iam.Role(
             self,
             "PipelineRole",
             role_name=f"AWSCodePipelineServiceRole-{self.environment}-test",
-            assumed_by=iam.ServicePrincipal("codepipeline.amazonaws.com")
+            assumed_by=iam.ServicePrincipal("codepipeline.amazonaws.com"),
+            managed_policies=[
+                iam.ManagedPolicy.from_aws_managed_policy_name("AWSCodePipelineServiceRole")
+            ]
         )
 
-        # CodeBuild Role
-        codebuild_role = iam.Role(
-            self,
-            "CodeBuildRole",
-            role_name=f"codebuild-outlier-service-codebuild-{self.environment}-test-service-role",
-            assumed_by=iam.ServicePrincipal("codebuild.amazonaws.com")
+        # Add ALB permissions to Pipeline Role
+        pipeline_role.add_to_policy(
+            iam.PolicyStatement(
+                effect=iam.Effect.ALLOW,
+                actions=[
+                    "elasticloadbalancing:*",
+                    "ecs:*",
+                    "codedeploy:*",
+                    "s3:*",
+                    "ecr:*"
+                ],
+                resources=["*"]
+            )
         )
 
         # CodeBuild Project
-        build_project = codebuild.Project(
+        build_project = codebuild.PipelineProject(
             self,
             "CodeBuildProject",
             project_name=f"outlier-service-codebuild-{self.environment}-test",
             build_spec=codebuild.BuildSpec.from_source_filename(f"buildspec_{self.environment}.yml"),
             environment=codebuild.BuildEnvironment(
                 compute_type=codebuild.ComputeType.SMALL,
-                image=codebuild.LinuxBuildImage.AMAZON_LINUX_2_5,
                 privileged=True,
-                environment_variables={
-                    "REPOSITORY_URI": codebuild.BuildEnvironmentVariable(
-                        value=f"{self.account}.dkr.ecr.{self.region}.amazonaws.com/{ecr_repository.repository_name}"
-                    ),
-                    "SERVICE_NAME": codebuild.BuildEnvironmentVariable(
-                        value=f"outlier-service-{self.environment}-test"
-                    ),
-                    "ENVIRONMENT": codebuild.BuildEnvironmentVariable(
-                        value=self.environment.upper()
-                    )
-                }
+                build_image=codebuild.LinuxBuildImage.AMAZON_LINUX_2_5
             ),
-            role=codebuild_role,
-            timeout=cdk.Duration.minutes(60),
-            queue_timeout=cdk.Duration.minutes(480)
+            environment_variables={
+                "REPOSITORY_URI": codebuild.BuildEnvironmentVariable(
+                    value=f"{self.account}.dkr.ecr.{self.region}.amazonaws.com/{ecr_repository.repository_name}"
+                ),
+                "SERVICE_NAME": codebuild.BuildEnvironmentVariable(
+                    value=f"outlier-service-{self.environment}-test"
+                ),
+                "ENVIRONMENT": codebuild.BuildEnvironmentVariable(
+                    value=self.environment.upper()
+                )
+            },
+            timeout=Duration.minutes(60),
+            queue_timeout=Duration.minutes(480),
+            cache=codebuild.Cache.local(codebuild.LocalCacheMode.DOCKER_LAYER)
         )
 
         # CodeDeploy Applications
@@ -79,7 +97,7 @@ class CodePipelineConstruct(BaseConstruct):
             application_name=f"outlier-jobs-codedeploy-{self.environment}-test"
         )
 
-        # CodeDeploy Deployment Groups
+        # CodeDeploy Deployment Groups with blue-green config
         service_deployment_group = codedeploy.EcsDeploymentGroup(
             self,
             "ServiceDeploymentGroup",
@@ -88,10 +106,14 @@ class CodePipelineConstruct(BaseConstruct):
             deployment_config=codedeploy.EcsDeploymentConfig.ALL_AT_ONCE,
             service=ecs_service,
             blue_green_deployment_config=codedeploy.EcsBlueGreenDeploymentConfig(
-                deployment_approval_wait_time=cdk.Duration.minutes(0),
-                listener=None,  # Will be configured in ECS service
+                listener=prod_listener,
+                test_listener=test_listener,
+                blue_target_group=service_target_groups[0],
+                green_target_group=service_target_groups[1],
+                deployment_approval_wait_time=Duration.minutes(0),
                 terminate_blue_tasks_on_deployment_success=codedeploy.EcsBlueGreenDeploymentTerminationConfig(
-                    termination_wait_time=cdk.Duration.minutes(5)
+                    action=codedeploy.EcsBlueGreenTerminationAction.TERMINATE,
+                    termination_wait_time=Duration.minutes(5)
                 )
             )
         )
@@ -100,23 +122,31 @@ class CodePipelineConstruct(BaseConstruct):
             self,
             "JobsDeploymentGroup",
             application=jobs_app,
-            deployment_group_name=f"outlier-job-deployment-group-{self.environment}-test",
+            deployment_group_name=f"outlier-jobs-deployment-group-{self.environment}-test",
             deployment_config=codedeploy.EcsDeploymentConfig.ALL_AT_ONCE,
             service=ecs_jobs_service,
             blue_green_deployment_config=codedeploy.EcsBlueGreenDeploymentConfig(
-                deployment_approval_wait_time=cdk.Duration.minutes(0),
-                listener=None,
+                listener=prod_listener,
+                test_listener=test_listener,
+                blue_target_group=jobs_target_groups[0],
+                green_target_group=jobs_target_groups[1],
+                deployment_approval_wait_time=Duration.minutes(0),
                 terminate_blue_tasks_on_deployment_success=codedeploy.EcsBlueGreenDeploymentTerminationConfig(
-                    termination_wait_time=cdk.Duration.minutes(5)
+                    action=codedeploy.EcsBlueGreenTerminationAction.TERMINATE,
+                    termination_wait_time=Duration.minutes(5)
                 )
             )
         )
 
         # Artifact Bucket
-        artifact_bucket = s3.Bucket.from_bucket_name(
+        artifact_bucket = s3.Bucket(
             self,
             "ArtifactBucket",
-            f"codepipeline-us-east-1-{self.environment}-test-1737061688"
+            bucket_name=f"codepipeline-{self.region}-{self.environment}-test-{self.account}",
+            removal_policy=cdk.RemovalPolicy.DESTROY,
+            auto_delete_objects=True,
+            versioned=True,
+            encryption=s3.BucketEncryption.S3_MANAGED
         )
 
         # Pipeline
@@ -125,39 +155,42 @@ class CodePipelineConstruct(BaseConstruct):
             "Pipeline",
             pipeline_name=f"outlier-service-codepipeline-{self.environment}-test",
             role=pipeline_role,
-            artifact_bucket=artifact_bucket
+            artifact_bucket=artifact_bucket,
+            cross_account_keys=False
         )
 
         source_output = codepipeline.Artifact("SourceArtifact")
         build_output = codepipeline.Artifact("BuildArtifact")
 
-        # Add Source Stage
+        # Source Stage
         source_action = codepipeline_actions.CodeStarConnectionsSourceAction(
             action_name="Source",
             owner="outlier-org",
             repo="outlier-api",
-            branch=f"{self.environment}-aws-infra-changes",
-            connection_arn="arn:aws:codeconnections:us-east-1:528757783796:connection/ddd91232-5089-40b4-bc84-7ba9e4d1c20f",
-            output=source_output
+            branch="nightly-aws-infra-changes",
+            connection_arn="arn:aws:codestar-connections:us-east-1:528757783796:connection/ddd91232-5089-40b4-bc84-7ba9e4d1c20f",
+            output=source_output,
+            trigger_on_push=True
         )
         self.pipeline.add_stage(
             stage_name="Source",
             actions=[source_action]
         )
 
-        # Add Build Stage
+        # Build Stage
         build_action = codepipeline_actions.CodeBuildAction(
             action_name="Build",
             project=build_project,
             input=source_output,
-            outputs=[build_output]
+            outputs=[build_output],
+            run_order=1
         )
         self.pipeline.add_stage(
             stage_name="Build",
             actions=[build_action]
         )
 
-        # Add Deploy Stage
+        # Deploy Stage
         service_deploy_action = codepipeline_actions.CodeDeployEcsDeployAction(
             action_name="OutlierServiceDeployment",
             service=ecs_service,
@@ -170,10 +203,13 @@ class CodePipelineConstruct(BaseConstruct):
                 build_output,
                 f"taskdef_{self.environment}.json"
             ),
-            container_image_inputs=[{
-                "input": build_output,
-                "taskDefinitionPlaceholder": "IMAGE1_NAME"
-            }]
+            container_image_inputs=[
+                codepipeline_actions.CodeDeployEcsContainerImageInput(
+                    input=build_output,
+                    task_definition_placeholder="IMAGE1_NAME"
+                )
+            ],
+            run_order=1
         )
 
         jobs_deploy_action = codepipeline_actions.CodeDeployEcsDeployAction(
@@ -188,10 +224,13 @@ class CodePipelineConstruct(BaseConstruct):
                 build_output,
                 f"taskdef_job_{self.environment}.json"
             ),
-            container_image_inputs=[{
-                "input": build_output,
-                "taskDefinitionPlaceholder": "IMAGE1_NAME"
-            }]
+            container_image_inputs=[
+                codepipeline_actions.CodeDeployEcsContainerImageInput(
+                    input=build_output,
+                    task_definition_placeholder="IMAGE1_NAME"
+                )
+            ],
+            run_order=2
         )
 
         self.pipeline.add_stage(
