@@ -4,7 +4,6 @@ from constructs import Construct
 from custom_constructs.network_construct import NetworkConstruct
 from custom_constructs.storage_construct import StorageConstruct
 from custom_constructs.iam_construct import IamConstruct
-from custom_constructs.ecr_construct import EcrConstruct
 from custom_constructs.alb_construct import AlbConstruct
 from custom_constructs.ecs_construct import EcsConstruct
 from custom_constructs.pipeline_construct import CodePipelineConstruct
@@ -22,9 +21,6 @@ class BaseStack(cdk.Stack):
         # IAM resources
         iam = IamConstruct(self, "IamConstruct")
 
-        # ECR repository - referenced by both ECS and CodePipeline
-        ecr = EcrConstruct(self, "EcrConstruct")
-
         # Create ALB with target groups
         alb = AlbConstruct(
             self,
@@ -34,7 +30,7 @@ class BaseStack(cdk.Stack):
             subnets=network.vpc.public_subnets
         )
 
-        # Create ECS resources - now using proper image from ECR
+        # Create ECS resources (basic infrastructure only)
         ecs = EcsConstruct(
             self,
             "EcsConstruct",
@@ -43,18 +39,16 @@ class BaseStack(cdk.Stack):
             execution_role=iam.task_execution_role,
             task_role=iam.task_role,
             service_target_group=alb.service_tg_1,
-            jobs_target_group=alb.jobs_tg_1,
-            ecr_repository=ecr.ecr_repository
+            jobs_target_group=alb.jobs_tg_1
         )
 
-        # Create Pipeline resources with blue-green config
+        # Create Pipeline resources (handles deployments and updates)
         pipeline = CodePipelineConstruct(
             self,
             "PipelineConstruct",
             ecs_cluster=ecs.cluster,
             ecs_service=ecs.service,
             ecs_jobs_service=ecs.jobs_service,
-            ecr_repository=ecr.ecr_repository,
             prod_listener=alb.production_listener,
             test_listener=alb.test_listener,
             service_target_groups=[
@@ -67,15 +61,14 @@ class BaseStack(cdk.Stack):
             ]
         )
 
-        # Add output for ECR repository URI
+        # Add outputs for important resources
         cdk.CfnOutput(
             self,
             "EcrRepositoryUri",
-            value=ecr.ecr_repository.repository_uri,
+            value=pipeline.ecr_repository.repository_uri,
             description="ECR Repository URI"
         )
 
-        # Add output for ALB DNS name
         cdk.CfnOutput(
             self,
             "AlbDnsName",
