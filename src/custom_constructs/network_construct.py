@@ -121,19 +121,6 @@ class NetworkConstruct(BaseConstruct):
     def create_vpc_endpoints(self):
         """Create VPC Endpoints for AWS services"""
 
-        # Gateway Endpoints
-        self.s3_gateway_endpoint = self.vpc.add_gateway_endpoint(
-            "S3GatewayEndpoint-test",
-            service=ec2.GatewayVpcEndpointAwsService.S3,
-            subnets=[ec2.SubnetSelection(subnet_type=ec2.SubnetType.PRIVATE_WITH_EGRESS)]
-        )
-
-        self.dynamodb_endpoint = self.vpc.add_gateway_endpoint(
-            "DynamoDBEndpoint-test",
-            service=ec2.GatewayVpcEndpointAwsService.DYNAMODB,
-            subnets=[ec2.SubnetSelection(subnet_type=ec2.SubnetType.PRIVATE_WITH_EGRESS)]
-        )
-
         # Interface Endpoints
         interface_endpoints = [
             ("SecretsManager", ec2.InterfaceVpcEndpointAwsService.SECRETS_MANAGER),

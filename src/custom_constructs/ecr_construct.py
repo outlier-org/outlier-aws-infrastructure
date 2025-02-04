@@ -20,7 +20,6 @@ class EcrConstruct(BaseConstruct):
                     tag_status=ecr.TagStatus.ANY
                 )
             ],
-            removal_policy=cdk.RemovalPolicy.RETAIN
         )
 
         # Add tags
