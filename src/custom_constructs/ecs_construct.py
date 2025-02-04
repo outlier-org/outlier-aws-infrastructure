@@ -1,11 +1,13 @@
-# src/custom_constructs/ecs_construct.py
-from aws_cdk import aws_ecs as ecs
-from aws_cdk import aws_ec2 as ec2
-from aws_cdk import aws_iam as iam
-from aws_cdk import aws_elasticloadbalancingv2 as elbv2
-import aws_cdk as cdk
+from aws_cdk import (
+    aws_ecs as ecs,
+    aws_ec2 as ec2,
+    aws_iam as iam,
+    aws_elasticloadbalancingv2 as elbv2,
+    Duration
+)
 from constructs import Construct
 from .base_construct import BaseConstruct
+
 
 class EcsConstruct(BaseConstruct):
     def __init__(
@@ -17,13 +19,9 @@ class EcsConstruct(BaseConstruct):
             execution_role: iam.IRole,
             task_role: iam.IRole,
             service_target_group: elbv2.IApplicationTargetGroup,
-            jobs_target_group: elbv2.IApplicationTargetGroup
-        ):
+            jobs_target_group: elbv2.IApplicationTargetGroup,
+    ):
         super().__init__(scope, id)
-
-        # Store the target groups
-        self.service_target_group = service_target_group
-        self.jobs_target_group = jobs_target_group
 
         # Create ECS Cluster
         self._cluster = ecs.Cluster(
@@ -33,11 +31,10 @@ class EcsConstruct(BaseConstruct):
             vpc=vpc
         )
 
-        # Add capacity providers
-        self._cluster.add_capacity_provider("FARGATE")
-        self._cluster.add_capacity_provider("FARGATE_SPOT")
+        # Enable Fargate capacity providers
+        self._cluster.enable_fargate_capacity_providers()
 
-        # Main Service Task Definition
+        # Create the main service task definition
         service_task_def = ecs.FargateTaskDefinition(
             self,
             "ServiceTaskDef",
@@ -51,7 +48,7 @@ class EcsConstruct(BaseConstruct):
         service_container = service_task_def.add_container(
             "ServiceContainer",
             container_name=f"Outlier-Service-Container-{self.environment}-test",
-            image=ecs.ContainerImage.from_registry("amazon/amazon-ecs-sample"),  # Placeholder
+            image=ecs.ContainerImage.from_registry("amazon/amazon-ecs-sample"),
             cpu=3072,
             memory_limit_mib=6144,
             logging=ecs.LogDriver.aws_logs(
@@ -61,13 +58,10 @@ class EcsConstruct(BaseConstruct):
         )
 
         service_container.add_port_mappings(
-            ecs.PortMapping(
-                container_port=1337,
-                protocol=ecs.Protocol.TCP
-            )
+            ecs.PortMapping(container_port=1337, protocol=ecs.Protocol.TCP)
         )
 
-        # Jobs Service Task Definition
+        # Create the jobs service task definition
         jobs_task_def = ecs.FargateTaskDefinition(
             self,
             "JobsTaskDef",
@@ -81,7 +75,7 @@ class EcsConstruct(BaseConstruct):
         jobs_container = jobs_task_def.add_container(
             "JobsContainer",
             container_name=f"Outlier-Job-Container-{self.environment}-test",
-            image=ecs.ContainerImage.from_registry("amazon/amazon-ecs-sample"),  # Placeholder
+            image=ecs.ContainerImage.from_registry("amazon/amazon-ecs-sample"),
             cpu=3072,
             memory_limit_mib=6144,
             logging=ecs.LogDriver.aws_logs(
@@ -91,13 +85,10 @@ class EcsConstruct(BaseConstruct):
         )
 
         jobs_container.add_port_mappings(
-            ecs.PortMapping(
-                container_port=1337,
-                protocol=ecs.Protocol.TCP
-            )
+            ecs.PortMapping(container_port=1337, protocol=ecs.Protocol.TCP)
         )
 
-        # Main Service
+        # Create the main service
         self._service = ecs.FargateService(
             self,
             "Service",
@@ -107,17 +98,13 @@ class EcsConstruct(BaseConstruct):
             desired_count=2,
             platform_version=ecs.FargatePlatformVersion.VERSION1_4,
             security_groups=security_groups,
-            vpc_subnets=ec2.SubnetSelection(
-                subnet_type=ec2.SubnetType.PRIVATE_WITH_EGRESS
-            ),
+            vpc_subnets=ec2.SubnetSelection(subnet_type=ec2.SubnetType.PRIVATE_WITH_EGRESS),
             assign_public_ip=False,
-            health_check_grace_period=cdk.Duration.seconds(0),
-            deployment_controller=ecs.DeploymentController(
-                type=ecs.DeploymentControllerType.CODE_DEPLOY
-            )
+            health_check_grace_period=Duration.seconds(0),
+            deployment_controller=ecs.DeploymentController(type=ecs.DeploymentControllerType.CODE_DEPLOY)
         )
 
-        # Jobs Service
+        # Create the jobs service
         self._jobs_service = ecs.FargateService(
             self,
             "JobsService",
@@ -127,25 +114,15 @@ class EcsConstruct(BaseConstruct):
             desired_count=1,
             platform_version=ecs.FargatePlatformVersion.VERSION1_4,
             security_groups=security_groups,
-            vpc_subnets=ec2.SubnetSelection(
-                subnet_type=ec2.SubnetType.PRIVATE_WITH_EGRESS
-            ),
+            vpc_subnets=ec2.SubnetSelection(subnet_type=ec2.SubnetType.PRIVATE_WITH_EGRESS),
             assign_public_ip=False,
-            health_check_grace_period=cdk.Duration.seconds(0),
-            deployment_controller=ecs.DeploymentController(
-                type=ecs.DeploymentControllerType.CODE_DEPLOY
-            )
+            health_check_grace_period=Duration.seconds(0),
+            deployment_controller=ecs.DeploymentController(type=ecs.DeploymentControllerType.CODE_DEPLOY)
         )
 
-        # Attach load balancer target groups to main service
-        self._service.attach_to_application_target_group(
-            target_group=self.service_target_group
-        )
-
-        # Attach load balancer target groups to jobs service
-        self._jobs_service.attach_to_application_target_group(
-            target_group=self.jobs_target_group
-        )
+        # Attach load balancer target groups
+        self._service.attach_to_application_target_group(service_target_group)
+        self._jobs_service.attach_to_application_target_group(jobs_target_group)
 
     @property
     def cluster(self) -> ecs.ICluster:
