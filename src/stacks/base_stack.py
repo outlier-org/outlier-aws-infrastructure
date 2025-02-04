@@ -60,18 +60,3 @@ class BaseStack(cdk.Stack):
                 alb.jobs_tg_2
             ]
         )
-
-        # Add outputs for important resources
-        cdk.CfnOutput(
-            self,
-            "EcrRepositoryUri",
-            value=pipeline.ecr_repository.repository_uri,
-            description="ECR Repository URI"
-        )
-
-        cdk.CfnOutput(
-            self,
-            "AlbDnsName",
-            value=alb.load_balancer.load_balancer_dns_name,
-            description="Application Load Balancer DNS Name"
-        )

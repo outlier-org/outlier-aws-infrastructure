@@ -8,17 +8,63 @@ class IamConstruct(BaseConstruct):
     def __init__(self, scope: Construct, id: str):
         super().__init__(scope, id)
 
-        # Task Execution Role - used by ECS agent to pull images, write logs, etc
+        # In iam_construct.py, update the task execution role:
         self._task_execution_role = iam.Role(
             self,
             "EcsTaskExecutionRole",
             role_name=f"ecsTaskExecutionRole-{self.environment}-test",
             assumed_by=iam.ServicePrincipal("ecs-tasks.amazonaws.com"),
+            description="Allows ECS tasks to call AWS services on your behalf.",
             managed_policies=[
+                # AWS Managed Policies
                 iam.ManagedPolicy.from_aws_managed_policy_name("service-role/AmazonECSTaskExecutionRolePolicy"),
                 iam.ManagedPolicy.from_aws_managed_policy_name("CloudWatchReadOnlyAccess"),
                 iam.ManagedPolicy.from_aws_managed_policy_name("SecretsManagerReadWrite"),
+                iam.ManagedPolicy.from_aws_managed_policy_name("AmazonKinesisFirehoseFullAccess"),
+                iam.ManagedPolicy.from_aws_managed_policy_name("AmazonSQSFullAccess"),
             ]
+        )
+
+        # Add custom policies that match OutlierAPISecretManagerReadPolicy and OutlierAPIS3AccessPolicy
+        self._task_execution_role.add_to_policy(
+            iam.PolicyStatement(
+                effect=iam.Effect.ALLOW,
+                actions=["secretsmanager:GetSecretValue"],
+                resources=[
+                    f"arn:aws:secretsmanager:{self.region}:{self.account}:secret:outlier-api-secrets*",
+                    f"arn:aws:secretsmanager:{self.region}:{self.account}:secret:DATADOG_API_KEY*"
+                ]
+            )
+        )
+
+        self._task_execution_role.add_to_policy(
+            iam.PolicyStatement(
+                effect=iam.Effect.ALLOW,
+                actions=[
+                    "logs:CreateLogGroup",
+                    "logs:CreateLogStream",
+                    "logs:PutLogEvents"
+                ],
+                resources=[
+                    f"arn:aws:logs:{self.region}:{self.account}:log-group:/aws/ecs/*",
+                    f"arn:aws:logs:{self.region}:{self.account}:log-group:/aws/ecs/*:*"
+                ]
+            )
+        )
+
+        self._task_execution_role.add_to_policy(
+            iam.PolicyStatement(
+                effect=iam.Effect.ALLOW,
+                actions=[
+                    "s3:GetObject",
+                    "s3:PutObject",
+                    "s3:ListBucket"
+                ],
+                resources=[
+                    f"arn:aws:s3:::outlier-student-progress-{self.environment}-test",
+                    f"arn:aws:s3:::outlier-student-progress-{self.environment}-test/*"
+                ]
+            )
         )
 
         # Task Role - used by the actual running containers

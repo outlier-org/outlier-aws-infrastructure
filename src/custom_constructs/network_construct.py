@@ -14,6 +14,7 @@ class NetworkConstruct(BaseConstruct):
         )
 
         self.create_security_groups()
+        self.create_vpc_endpoints()
 
     def create_security_groups(self):
         """Create all application security groups"""
@@ -121,6 +122,45 @@ class NetworkConstruct(BaseConstruct):
             cdk.Tags.of(sg).add("env", self.environment)
             cdk.Tags.of(sg).add("bounded_context", "outlier")
             cdk.Tags.of(sg).add("Name", name)
+
+    def create_vpc_endpoints(self):
+        """Create VPC Endpoints for AWS services"""
+
+        # Gateway Endpoints (S3 and DynamoDB)
+        self.s3_endpoint = ec2.GatewayVpcEndpoint(
+            self,
+            "S3Endpoint",
+            vpc=self.vpc,
+            service=ec2.GatewayVpcEndpointAwsService.S3
+        )
+
+        self.dynamodb_endpoint = ec2.GatewayVpcEndpoint(
+            self,
+            "DynamoDBEndpoint",
+            vpc=self.vpc,
+            service=ec2.GatewayVpcEndpointAwsService.DYNAMODB
+        )
+
+        # Interface Endpoints
+        interface_endpoints = [
+            ("SecretsManagerEndpoint", ec2.InterfaceVpcEndpointAwsService.SECRETS_MANAGER),
+            ("EcrApiEndpoint", ec2.InterfaceVpcEndpointAwsService.ECR),
+            ("EcrDkrEndpoint", ec2.InterfaceVpcEndpointAwsService.ECR_DOCKER),
+            ("CloudWatchLogsEndpoint", ec2.InterfaceVpcEndpointAwsService.CLOUDWATCH_LOGS)
+        ]
+
+        for endpoint_id, service in interface_endpoints:
+            ec2.InterfaceVpcEndpoint(
+                self,
+                endpoint_id,
+                vpc=self.vpc,
+                service=service,
+                private_dns_enabled=True,
+                security_groups=[self.service_sg],
+                subnets=ec2.SubnetSelection(
+                    subnet_type=ec2.SubnetType.PRIVATE_WITH_EGRESS
+                )
+            )
 
     @property
     def alb_security_group(self) -> ec2.ISecurityGroup:
