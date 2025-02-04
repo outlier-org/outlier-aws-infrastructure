@@ -53,21 +53,6 @@ class BaseStack(cdk.Stack):
         #     jobs_target_group=alb.jobs_tg_1
         # )
 
-        # Add Task Definition ARN outputs
-        cdk.CfnOutput(
-            self,
-            "ServiceTaskDefinitionArn",
-            value=ecs.service.task_definition.task_definition_arn,
-            description="Service Task Definition ARN"
-        )
-
-        cdk.CfnOutput(
-            self,
-            "JobsTaskDefinitionArn",
-            value=ecs.jobs_service.task_definition.task_definition_arn,
-            description="Jobs Task Definition ARN"
-        )
-
         # Create Pipeline resources (commented until ready)
         # pipeline = CodePipelineConstruct(
         #     self,
@@ -79,61 +64,3 @@ class BaseStack(cdk.Stack):
         #     service_target_groups=[alb.service_tg_1, alb.service_tg_2],
         #     jobs_target_groups=[alb.jobs_tg_1, alb.jobs_tg_2]
         # )
-
-        # Add outputs for verification
-        cdk.CfnOutput(
-            self,
-            "LoadBalancerDNS",
-            value=alb.load_balancer.load_balancer_dns_name,
-            description="Load Balancer DNS Name"
-        )
-
-        cdk.CfnOutput(
-            self,
-            "EcsClusterArn",
-            value=ecs.cluster.cluster_arn,
-            description="ECS Cluster ARN"
-        )
-
-        cdk.CfnOutput(
-            self,
-            "EcsServiceArn",
-            value=ecs.service.service_arn,
-            description="ECS Service ARN"
-        )
-
-        cdk.CfnOutput(
-            self,
-            "EcsJobsServiceArn",
-            value=ecs.jobs_service.service_arn,
-            description="ECS Jobs Service ARN"
-        )
-
-        # Target group outputs (for CodeDeploy config)
-        cdk.CfnOutput(
-            self,
-            "ServiceTargetGroup1Arn",
-            value=alb.service_tg_1.target_group_arn,
-            description="Service Target Group 1 ARN"
-        )
-
-        cdk.CfnOutput(
-            self,
-            "ServiceTargetGroup2Arn",
-            value=alb.service_tg_2.target_group_arn,
-            description="Service Target Group 2 ARN"
-        )
-
-        cdk.CfnOutput(
-            self,
-            "JobsTargetGroup1Arn",
-            value=alb.jobs_tg_1.target_group_arn,
-            description="Jobs Target Group 1 ARN"
-        )
-
-        cdk.CfnOutput(
-            self,
-            "JobsTargetGroup2Arn",
-            value=alb.jobs_tg_2.target_group_arn,
-            description="Jobs Target Group 2 ARN"
-        )
