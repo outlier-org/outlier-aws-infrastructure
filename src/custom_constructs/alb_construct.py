@@ -48,7 +48,7 @@ class AlbConstruct(BaseConstruct):
             protocol=elbv2.ApplicationProtocol.HTTP,
             target_type=elbv2.TargetType.IP,
             health_check=elbv2.HealthCheck(
-                path="/health",
+                path="/",
                 healthy_http_codes="200-499",
                 interval=cdk.Duration.seconds(30),
                 timeout=cdk.Duration.seconds(5),
@@ -68,7 +68,7 @@ class AlbConstruct(BaseConstruct):
             protocol=elbv2.ApplicationProtocol.HTTP,
             target_type=elbv2.TargetType.IP,
             health_check=elbv2.HealthCheck(
-                path="/health",
+                path="/",
                 healthy_http_codes="200-499",
                 interval=cdk.Duration.seconds(30),
                 timeout=cdk.Duration.seconds(5),
@@ -89,7 +89,7 @@ class AlbConstruct(BaseConstruct):
             protocol=elbv2.ApplicationProtocol.HTTP,
             target_type=elbv2.TargetType.IP,
             health_check=elbv2.HealthCheck(
-                path="/health",
+                path="/",
                 healthy_http_codes="200-499",
                 interval=cdk.Duration.seconds(30),
                 timeout=cdk.Duration.seconds(5),
@@ -109,7 +109,7 @@ class AlbConstruct(BaseConstruct):
             protocol=elbv2.ApplicationProtocol.HTTP,
             target_type=elbv2.TargetType.IP,
             health_check=elbv2.HealthCheck(
-                path="/health",
+                path="/",
                 healthy_http_codes="200-499",
                 interval=cdk.Duration.seconds(30),
                 timeout=cdk.Duration.seconds(5),
