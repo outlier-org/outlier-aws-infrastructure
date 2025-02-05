@@ -29,7 +29,7 @@ class EcsConstruct(BaseConstruct):
         self._cluster = ecs.Cluster(
             self,
             "EcsCluster",
-            cluster_name=f"outlier-service-cluster-{self.environment}",
+            cluster_name=f"outlier-service-cluster-{self.environment}-7",
             vpc=vpc,
             container_insights=True
         )
