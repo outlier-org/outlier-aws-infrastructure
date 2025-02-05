@@ -22,7 +22,6 @@ class EcsConstruct(BaseConstruct):
     ):
         super().__init__(scope, id)
 
-        # Create ECS Cluster (still using L2 construct as it's simpler)
         self._cluster = ecs.Cluster(
             self,
             "EcsCluster",
@@ -31,7 +30,11 @@ class EcsConstruct(BaseConstruct):
             container_insights=True
         )
 
-        # Create main service using L1 construct (CfnService)
+        # Get the underlying L1 target group constructs
+        cfn_service_target_group = service_target_group.node.default_child
+        cfn_jobs_target_group = jobs_target_group.node.default_child
+
+        # Create main service
         self._service = ecs.CfnService(
             self,
             "Service",
@@ -54,7 +57,7 @@ class EcsConstruct(BaseConstruct):
             )]
         )
 
-        # Create jobs service using L1 construct (CfnService)
+        # Create jobs service
         self._jobs_service = ecs.CfnService(
             self,
             "JobsService",
@@ -76,6 +79,10 @@ class EcsConstruct(BaseConstruct):
                 target_group_arn=jobs_target_group.target_group_arn
             )]
         )
+
+        # Add explicit dependencies
+        self._service.node.add_dependency(cfn_service_target_group)
+        self._jobs_service.node.add_dependency(cfn_jobs_target_group)
 
     @property
     def cluster(self) -> ecs.ICluster:
