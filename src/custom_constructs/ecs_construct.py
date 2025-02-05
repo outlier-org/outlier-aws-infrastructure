@@ -6,7 +6,6 @@ from aws_cdk import (
     aws_elasticloadbalancingv2 as elbv2,
     aws_secretsmanager as secretsmanager,
     Duration,
-    RemovalPolicy,
 )
 import aws_cdk as cdk
 from constructs import Construct
@@ -29,7 +28,7 @@ class EcsConstruct(BaseConstruct):
         self._cluster = ecs.Cluster(
             self,
             "EcsCluster",
-            cluster_name=f"outlier-service-cluster-{self.environment}-7",
+            cluster_name=f"outlier-service-cluster-{self.environment}-cdk",
             vpc=vpc,
             container_insights=True
         )
@@ -56,7 +55,6 @@ class EcsConstruct(BaseConstruct):
             self,
             "ServiceLogGroup",
             log_group_name=f"/ecs/Outlier-Service-{self.environment}",
-            removal_policy=cdk.RemovalPolicy.DESTROY
         )
 
         # Add main container
