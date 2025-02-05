@@ -22,7 +22,6 @@ class EcsConstruct(BaseConstruct):
     ):
         super().__init__(scope, id)
 
-        # Create ECS Cluster
         self._cluster = ecs.Cluster(
             self,
             "EcsCluster",
@@ -31,14 +30,14 @@ class EcsConstruct(BaseConstruct):
             container_insights=True
         )
 
-        # Use existing task definitions
-        service_task_def = ecs.FargateTaskDefinition.from_fargate_task_definition_arn(
+        # Import existing task definitions
+        service_task_def = ecs.TaskDefinition.from_task_definition_arn(
             self,
             "ServiceTaskDef",
             f"arn:aws:ecs:us-east-1:528757783796:task-definition/Outlier-Service-Task-{self.environment}:16"
         )
 
-        jobs_task_def = ecs.FargateTaskDefinition.from_fargate_task_definition_arn(
+        jobs_task_def = ecs.TaskDefinition.from_task_definition_arn(
             self,
             "JobsTaskDef",
             f"arn:aws:ecs:us-east-1:528757783796:task-definition/Outlier-job-task-{self.environment}:16"
