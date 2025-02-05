@@ -1,4 +1,3 @@
-# In ECS Construct
 from aws_cdk import (
     aws_ecs as ecs,
     aws_ec2 as ec2,
@@ -7,9 +6,12 @@ from aws_cdk import (
     aws_elasticloadbalancingv2 as elbv2,
     aws_secretsmanager as secretsmanager,
     Duration,
+    RemovalPolicy,
 )
+import aws_cdk as cdk
 from constructs import Construct
 from .base_construct import BaseConstruct
+
 
 class EcsConstruct(BaseConstruct):
     def __init__(
