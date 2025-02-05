@@ -40,7 +40,7 @@ class NetworkConstruct(BaseConstruct):
             allow_all_outbound=True
         )
 
-    # Import existing RDS Security Group
+        # Import existing RDS Security Group
         self.rds_sg = ec2.SecurityGroup.from_security_group_id(
             self,
             "ExistingRdsSecurityGroup",
@@ -85,14 +85,6 @@ class NetworkConstruct(BaseConstruct):
             peer=ec2.Peer.security_group_id(self.alb_sg.security_group_id),
             connection=ec2.Port.tcp(1337),
             description="Allow inbound from ALB"
-        )
-
-        # In NetworkConstruct's create_security_groups method
-        self.rds_sg = ec2.SecurityGroup.from_security_group_id(
-            self,
-            "ExistingRdsSecurityGroup",
-            "sg-05fcdaf33c1d2a016",  # Use the existing RDS security group ID
-            allow_all_outbound=True
         )
 
         # RDS rules
