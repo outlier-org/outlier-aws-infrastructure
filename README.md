@@ -21,6 +21,34 @@ This repository contains Outlier's AWS CDK project. It defines infrastructure as
 
 ---
 
+#### Which Outlier AWS Resources are ✅ managed by this project?
+- Our core application stack.
+  - ✅ ECR (App Images)
+  - ✅ ALB (App Load Balancer)
+  - ✅ ECS (App Containers)
+  - ✅ RDS (App Database)
+  - ✅ CodePipeline (App CI/CD)
+  - ✅ S3 Buckets for Application (App Blob Storage)
+
+#### Which Outlier AWS Resources are NOT ❌ managed by this project?
+- Any non-core application resources.
+  - ❌ VPC and other high-level networking resources
+    - Why? Savvas IFT manages our high-level networking resources themselves, through Iaac (Terraform/CDK). We do not want to have 2 separate IaaC projects trying to manage the same resources. 
+    - Because of this, we are not and SHOULD NOT be managing any AWS Resources that have `terraform_managed = True` as a tag.
+    - We do, however, dynamically import and reference these values in this project.
+  - ❌ Task Definitions
+    - Why? These live inside our application repositories and are dynamically generated and used by our AWS CodePipeline. see `outlier-api/taskdef_nightly.json`
+  - ❌ Secrets Manager 
+    - Why? It is not good practice to manage Secrets Manager resources in this code. 
+    - We do, however, dynamically fetch/import and reference these values in this project as needed.
+  - ❌ ACM Certificates
+    - Why? Certificates often have their own lifecycle outside of the core application resources, sometimes with other Savvas parties needing to make changes to them. Because of this, I chose to leave their management in the AWS console. 
+    - We do, however, dynamically import and reference these values in this project.
+  - ❌ Redshift (Data Warehouse)
+  - ❌ Firehose, DMS, DataSync and other non-application-stack services.
+
+---
+
 ## Setup Instructions
 
 ### Steps to Configure and Deploy

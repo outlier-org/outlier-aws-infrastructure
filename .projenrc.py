@@ -20,7 +20,7 @@ project = AwsCdkPythonApp(
     cdk_version="2.153.0", # Find the latest CDK version here: https://pypi.org/project/aws-cdk-lib/
     cdk_version_pinning=True,
     module_name=python_module_name,
-    name="outlier-aws-cdk-infrastructure",
+    name="outlier-aws-infrastructure",
     license="Apache-2.0",
     description="Create and deploy an AWS CDK app that will manage the infra for 1 or more AWS account(s) using GitHub actions.",
     version="0.1.0",
@@ -30,6 +30,7 @@ project = AwsCdkPythonApp(
     dev_deps=["projen@0.85.2", "ruff"], # Find the latest projen version here: https://pypi.org/project/projen/
     github_options={
         "pull_request_lint": False,
+        "workflows": True
     },
     git_ignore_options={
         "ignore_patterns": [
@@ -65,6 +66,7 @@ project = AwsCdkPythonApp(
             "sdist/",
             "var/",
             "venv/",
+            "former_2_output.py",
         ],
     },
 )
@@ -72,6 +74,12 @@ project = AwsCdkPythonApp(
 # Set the CDK_DEFAULT_REGION environment variable for the projen tasks,
 # so the CDK CLI knows which region to use
 project.tasks.add_environment("CDK_DEFAULT_REGION", aws_region)
+
+# First remove the existing task
+project.tasks.remove_task("install:ci")
+
+# Then add our modified version
+project.tasks.add_task("install:ci", exec="poetry check --lock && poetry install --no-root")
 
 # Define the target AWS accounts for the different environments
 target_accounts = {
