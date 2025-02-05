@@ -1,15 +1,16 @@
-# src/custom_constructs/ecs_construct.py
+# In ECS Construct
 from aws_cdk import (
     aws_ecs as ecs,
     aws_ec2 as ec2,
     aws_iam as iam,
+    aws_logs as logs,
     aws_elasticloadbalancingv2 as elbv2,
-    Duration
+    aws_secretsmanager as secretsmanager,
+    Duration,
 )
 from constructs import Construct
 from .base_construct import BaseConstruct
 
-# In ECS Construct
 class EcsConstruct(BaseConstruct):
     def __init__(
             self,
@@ -22,79 +23,145 @@ class EcsConstruct(BaseConstruct):
     ):
         super().__init__(scope, id)
 
+        # Create ECS Cluster
         self._cluster = ecs.Cluster(
             self,
             "EcsCluster",
-            cluster_name=f"outlier-service-cluster-{self.environment}-3",
+            cluster_name=f"outlier-service-cluster-{self.environment}",
             vpc=vpc,
             container_insights=True
         )
 
-        # Get the underlying L1 target group constructs
-        cfn_service_target_group = service_target_group.node.default_child
-        cfn_jobs_target_group = jobs_target_group.node.default_child
+        # Create task definition
+        service_task_def = ecs.FargateTaskDefinition(
+            self,
+            "ServiceTaskDef",
+            family=f"Outlier-Service-Task-{self.environment}",
+            cpu=4096,
+            memory_limit_mib=8192,
+            task_role=iam.Role.from_role_arn(
+                self, "TaskRole",
+                f"arn:aws:iam::528757783796:role/ecsTaskExecutionRole"
+            ),
+            execution_role=iam.Role.from_role_arn(
+                self, "ExecutionRole",
+                f"arn:aws:iam::528757783796:role/ecsTaskExecutionRole"
+            )
+        )
 
-        # Create main service
-        self._service = ecs.CfnService(
+        # Create log group
+        log_group = logs.LogGroup(
+            self,
+            "ServiceLogGroup",
+            log_group_name=f"/ecs/Outlier-Service-{self.environment}",
+            removal_policy=cdk.RemovalPolicy.DESTROY
+        )
+
+        # Add main container
+        service_container = service_task_def.add_container(
+            "ServiceContainer",
+            container_name=f"Outlier-Service-Container-{self.environment}",
+            image=ecs.ContainerImage.from_registry("528757783796.dkr.ecr.us-east-1.amazonaws.com/outlier-ecr:17"),
+            cpu=3072,
+            memory_limit_mib=6144,
+            memory_reservation_mib=5120,
+            essential=True,
+            environment={
+                "DATADOG_SERVICE": "outlier-service",
+                "NODE_ENV": "production",
+                "CLOUD_PROVIDER": "AWS"
+            },
+            logging=ecs.LogDrivers.aws_logs(
+                stream_prefix="ecs",
+                log_group=log_group
+            ),
+            health_check=ecs.HealthCheck(
+                command=["CMD-SHELL", "curl -f http://localhost:1337/health || exit 1"],
+                interval=Duration.seconds(30),
+                timeout=Duration.seconds(5),
+                retries=3
+            )
+        )
+
+        service_container.add_port_mappings(
+            ecs.PortMapping(
+                name="outlier-service-container-nightly-1337-tcp",
+                container_port=1337,
+                host_port=1337,
+                protocol=ecs.Protocol.TCP
+            )
+        )
+
+        # Add Datadog container
+        datadog_container = service_task_def.add_container(
+            "DatadogAgent",
+            container_name="datadog-agent",
+            image=ecs.ContainerImage.from_registry("datadog/agent:latest"),
+            cpu=1024,
+            memory_limit_mib=2048,
+            memory_reservation_mib=1024,
+            essential=True,
+            environment={
+                "DD_SERVICE": "outlier-service",
+                "ECS_FARGATE": "true",
+                "DD_APM_ENABLED": "true",
+                "DD_ENV": self.environment
+            },
+            secrets={
+                "DD_API_KEY": ecs.Secret.from_secrets_manager(
+                    secretsmanager.Secret.from_secret_name_v2(
+                        self, "DatadogSecret",
+                        "DATADOG_API_KEY-UyF3IZ"
+                    ),
+                    field="VALUE"
+                )
+            },
+            logging=ecs.LogDrivers.aws_logs(
+                stream_prefix="ecs",
+                log_group=log_group
+            ),
+            health_check=ecs.HealthCheck(
+                command=["CMD-SHELL", "agent health"],
+                interval=Duration.seconds(30),
+                timeout=Duration.seconds(5),
+                retries=3,
+                start_period=Duration.seconds(15)
+            )
+        )
+
+        datadog_container.add_port_mappings(
+            ecs.PortMapping(
+                name="datadog-agent-8126-tcp",
+                container_port=8126,
+                host_port=8126,
+                protocol=ecs.Protocol.TCP
+            )
+        )
+
+        # Create the service
+        self._service = ecs.FargateService(
             self,
             "Service",
-            cluster=self._cluster.cluster_name,
             service_name=f"outlier-service-{self.environment}",
+            cluster=self._cluster,
+            task_definition=service_task_def,
             desired_count=2,
-            launch_type="FARGATE",
-            task_definition=f"arn:aws:ecs:us-east-1:528757783796:task-definition/Outlier-Service-Task-{self.environment}:16",
-            network_configuration=ecs.CfnService.NetworkConfigurationProperty(
-                awsvpc_configuration=ecs.CfnService.AwsVpcConfigurationProperty(
-                    subnets=vpc.select_subnets(subnet_type=ec2.SubnetType.PRIVATE_WITH_EGRESS).subnet_ids,
-                    security_groups=[sg.security_group_id for sg in security_groups],
-                    assign_public_ip="DISABLED"
-                )
-            ),
-            load_balancers=[ecs.CfnService.LoadBalancerProperty(
-                container_name=f"Outlier-Service-Container-{self.environment}",
-                container_port=1337,
-                target_group_arn=service_target_group.target_group_arn
-            )]
+            security_groups=security_groups,
+            vpc_subnets=ec2.SubnetSelection(subnet_type=ec2.SubnetType.PRIVATE_WITH_EGRESS),
+            assign_public_ip=False,
+            health_check_grace_period=Duration.seconds(60)
         )
 
-        # Create jobs service
-        self._jobs_service = ecs.CfnService(
-            self,
-            "JobsService",
-            cluster=self._cluster.cluster_name,
-            service_name=f"outlier-job-service-{self.environment}",
-            desired_count=2,
-            launch_type="FARGATE",
-            task_definition=f"arn:aws:ecs:us-east-1:528757783796:task-definition/Outlier-job-task-{self.environment}:16",
-            network_configuration=ecs.CfnService.NetworkConfigurationProperty(
-                awsvpc_configuration=ecs.CfnService.AwsVpcConfigurationProperty(
-                    subnets=vpc.select_subnets(subnet_type=ec2.SubnetType.PRIVATE_WITH_EGRESS).subnet_ids,
-                    security_groups=[sg.security_group_id for sg in security_groups],
-                    assign_public_ip="DISABLED"
-                )
-            ),
-            load_balancers=[ecs.CfnService.LoadBalancerProperty(
-                container_name=f"Outlier-Job-Container-{self.environment}",
-                container_port=1337,
-                target_group_arn=jobs_target_group.target_group_arn
-            )]
-        )
-
-        # Add explicit dependencies
-        self._service.node.add_dependency(cfn_service_target_group)
-        self._jobs_service.node.add_dependency(cfn_jobs_target_group)
+        # Attach target group
+        self._service.attach_to_application_target_group(service_target_group)
 
     @property
     def cluster(self) -> ecs.ICluster:
         return self._cluster
 
     @property
-    def service(self) -> ecs.CfnService:
+    def service(self) -> ecs.FargateService:
         return self._service
-
-    @property
-    def jobs_service(self) -> ecs.CfnService:
-        return self._jobs_service
 
 # BASIC CONFIG THAT WORKS
 # from aws_cdk import (
