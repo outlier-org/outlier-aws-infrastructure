@@ -111,7 +111,6 @@ class NetworkConstruct(BaseConstruct):
         sg_names = {
             self.alb_sg: alb_name,
             self.service_sg: service_name,
-            self.rds_sg: rds_name,
             self.secrets_sg: secrets_name
         }
 
