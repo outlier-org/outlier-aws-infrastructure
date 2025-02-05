@@ -37,10 +37,10 @@ This repository contains Outlier's AWS CDK project. It defines infrastructure as
     - Because of this, we are not and SHOULD NOT be managing any AWS Resources that have `terraform_managed = True` as a tag.
     - We do, however, dynamically import and reference these values in this project.
   - ❌ Task Definitions
-    - Why? These live inside our application repositories. see `outlier-api/taskdef_nightly.json`
+    - Why? These live inside our application repositories and are dynamically generated and used by our AWS CodePipeline. see `outlier-api/taskdef_nightly.json`
   - ❌ Secrets Manager 
     - Why? It is not good practice to manage Secrets Manager resources in this code. 
-    - We do, however, dynamically import and reference these values in this project.
+    - We do, however, dynamically fetch/import and reference these values in this project as needed.
   - ❌ ACM Certificates
     - Why? Certificates often have their own lifecycle outside of the core application resources, sometimes with other Savvas parties needing to make changes to them. Because of this, I chose to leave their management in the AWS console. 
     - We do, however, dynamically import and reference these values in this project.
