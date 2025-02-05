@@ -8,7 +8,6 @@ from aws_cdk import (
 )
 from constructs import Construct
 from .base_construct import BaseConstruct
-from typing import cast
 
 # In ECS Construct
 class EcsConstruct(BaseConstruct):
@@ -23,68 +22,71 @@ class EcsConstruct(BaseConstruct):
     ):
         super().__init__(scope, id)
 
+        # Create ECS Cluster (still using L2 construct as it's simpler)
         self._cluster = ecs.Cluster(
             self,
             "EcsCluster",
-            cluster_name=f"outlier-service-cluster-{self.environment}",
+            cluster_name=f"outlier-service-cluster-{self.environment}-3",
             vpc=vpc,
             container_insights=True
         )
 
-        # Import task definitions
-        service_task_def = ecs.TaskDefinition.from_task_definition_arn(
-            self,
-            "ServiceTaskDef",
-            f"arn:aws:ecs:us-east-1:528757783796:task-definition/Outlier-Service-Task-{self.environment}:16"
-        )
-
-        jobs_task_def = ecs.TaskDefinition.from_task_definition_arn(
-            self,
-            "JobsTaskDef",
-            f"arn:aws:ecs:us-east-1:528757783796:task-definition/Outlier-job-task-{self.environment}:16"
-        )
-
-        # Create services using L2 constructs but cast the task definitions
-        self._service = ecs.FargateService(
+        # Create main service using L1 construct (CfnService)
+        self._service = ecs.CfnService(
             self,
             "Service",
+            cluster=self._cluster.cluster_name,
             service_name=f"outlier-service-{self.environment}",
-            cluster=self._cluster,
-            task_definition=cast(ecs.TaskDefinition, service_task_def.node.default_child),
             desired_count=2,
-            security_groups=security_groups,
-            vpc_subnets=ec2.SubnetSelection(subnet_type=ec2.SubnetType.PRIVATE_WITH_EGRESS),
-            assign_public_ip=False,
-            health_check_grace_period=Duration.seconds(60)
+            launch_type="FARGATE",
+            task_definition=f"arn:aws:ecs:us-east-1:528757783796:task-definition/Outlier-Service-Task-{self.environment}:16",
+            network_configuration=ecs.CfnService.NetworkConfigurationProperty(
+                awsvpc_configuration=ecs.CfnService.AwsVpcConfigurationProperty(
+                    subnets=vpc.select_subnets(subnet_type=ec2.SubnetType.PRIVATE_WITH_EGRESS).subnet_ids,
+                    security_groups=[sg.security_group_id for sg in security_groups],
+                    assign_public_ip="DISABLED"
+                )
+            ),
+            load_balancers=[ecs.CfnService.LoadBalancerProperty(
+                container_name=f"Outlier-Service-Container-{self.environment}",
+                container_port=1337,
+                target_group_arn=service_target_group.target_group_arn
+            )]
         )
 
-        self._jobs_service = ecs.FargateService(
+        # Create jobs service using L1 construct (CfnService)
+        self._jobs_service = ecs.CfnService(
             self,
             "JobsService",
+            cluster=self._cluster.cluster_name,
             service_name=f"outlier-job-service-{self.environment}",
-            cluster=self._cluster,
-            task_definition=cast(ecs.TaskDefinition, jobs_task_def.node.default_child),
             desired_count=2,
-            security_groups=security_groups,
-            vpc_subnets=ec2.SubnetSelection(subnet_type=ec2.SubnetType.PRIVATE_WITH_EGRESS),
-            assign_public_ip=False,
-            health_check_grace_period=Duration.seconds(60)
+            launch_type="FARGATE",
+            task_definition=f"arn:aws:ecs:us-east-1:528757783796:task-definition/Outlier-job-task-{self.environment}:16",
+            network_configuration=ecs.CfnService.NetworkConfigurationProperty(
+                awsvpc_configuration=ecs.CfnService.AwsVpcConfigurationProperty(
+                    subnets=vpc.select_subnets(subnet_type=ec2.SubnetType.PRIVATE_WITH_EGRESS).subnet_ids,
+                    security_groups=[sg.security_group_id for sg in security_groups],
+                    assign_public_ip="DISABLED"
+                )
+            ),
+            load_balancers=[ecs.CfnService.LoadBalancerProperty(
+                container_name=f"Outlier-Job-Container-{self.environment}",
+                container_port=1337,
+                target_group_arn=jobs_target_group.target_group_arn
+            )]
         )
-
-        # Attach target groups
-        self._service.attach_to_application_target_group(service_target_group)
-        self._jobs_service.attach_to_application_target_group(jobs_target_group)
 
     @property
     def cluster(self) -> ecs.ICluster:
         return self._cluster
 
     @property
-    def service(self) -> ecs.IService:
+    def service(self) -> ecs.CfnService:
         return self._service
 
     @property
-    def jobs_service(self) -> ecs.IService:
+    def jobs_service(self) -> ecs.CfnService:
         return self._jobs_service
 
 # BASIC CONFIG THAT WORKS
