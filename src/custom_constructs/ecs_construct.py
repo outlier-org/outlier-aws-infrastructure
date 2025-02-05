@@ -8,6 +8,7 @@ from aws_cdk import (
 )
 from constructs import Construct
 from .base_construct import BaseConstruct
+from typing import cast
 
 # In ECS Construct
 class EcsConstruct(BaseConstruct):
@@ -30,7 +31,7 @@ class EcsConstruct(BaseConstruct):
             container_insights=True
         )
 
-        # Import existing task definitions
+        # Import task definitions
         service_task_def = ecs.TaskDefinition.from_task_definition_arn(
             self,
             "ServiceTaskDef",
@@ -43,13 +44,13 @@ class EcsConstruct(BaseConstruct):
             f"arn:aws:ecs:us-east-1:528757783796:task-definition/Outlier-job-task-{self.environment}:16"
         )
 
-        # Create the main service
+        # Create services using L2 constructs but cast the task definitions
         self._service = ecs.FargateService(
             self,
             "Service",
             service_name=f"outlier-service-{self.environment}",
             cluster=self._cluster,
-            task_definition=service_task_def,
+            task_definition=cast(ecs.TaskDefinition, service_task_def.node.default_child),
             desired_count=2,
             security_groups=security_groups,
             vpc_subnets=ec2.SubnetSelection(subnet_type=ec2.SubnetType.PRIVATE_WITH_EGRESS),
@@ -57,13 +58,12 @@ class EcsConstruct(BaseConstruct):
             health_check_grace_period=Duration.seconds(60)
         )
 
-        # Create the jobs service
         self._jobs_service = ecs.FargateService(
             self,
             "JobsService",
             service_name=f"outlier-job-service-{self.environment}",
             cluster=self._cluster,
-            task_definition=jobs_task_def,
+            task_definition=cast(ecs.TaskDefinition, jobs_task_def.node.default_child),
             desired_count=2,
             security_groups=security_groups,
             vpc_subnets=ec2.SubnetSelection(subnet_type=ec2.SubnetType.PRIVATE_WITH_EGRESS),
