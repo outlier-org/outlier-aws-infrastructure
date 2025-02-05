@@ -32,11 +32,11 @@ class AlbConstruct(BaseConstruct):
             self,
             "MainServiceTargetGroup",
             vpc=vpc,
-            port=80,
+            port=1337,
             protocol=elbv2.ApplicationProtocol.HTTP,
             target_type=elbv2.TargetType.IP,
             health_check=elbv2.HealthCheck(
-                path="/",
+                path="/health",
                 healthy_http_codes="200",
                 interval=Duration.seconds(30),
                 timeout=Duration.seconds(5)
@@ -55,11 +55,11 @@ class AlbConstruct(BaseConstruct):
             self,
             "JobsServiceTargetGroup",
             vpc=vpc,
-            port=80,
+            port=1337,
             protocol=elbv2.ApplicationProtocol.HTTP,
             target_type=elbv2.TargetType.IP,
             health_check=elbv2.HealthCheck(
-                path="/",
+                path="/health",
                 healthy_http_codes="200",
                 interval=Duration.seconds(30),
                 timeout=Duration.seconds(5)

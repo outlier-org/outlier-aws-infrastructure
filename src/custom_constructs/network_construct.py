@@ -86,7 +86,7 @@ class NetworkConstruct(BaseConstruct):
         # Service rules
         self.service_sg.add_ingress_rule(
             peer=ec2.Peer.security_group_id(self.alb_sg.security_group_id),
-            connection=ec2.Port.tcp(80),
+            connection=ec2.Port.tcp(1337),
             description="Allow inbound from ALB"
         )
 

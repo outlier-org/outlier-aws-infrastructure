@@ -34,10 +34,8 @@ class BaseStack(cdk.Stack):
             "EcsConstruct",
             vpc=network.vpc,
             security_groups=[network.service_security_group],
-            execution_role=iam.task_execution_role,
-            task_role=iam.task_role,
-            service_target_group=alb.main_target_group,  # Changed from service_tg_1
-            jobs_target_group=alb.jobs_target_group     # Changed from jobs_tg_1
+            service_target_group=alb.main_target_group,
+            jobs_target_group=alb.jobs_target_group
         )
 
         # Create Pipeline resources (handles deployments and updates)
