@@ -31,7 +31,7 @@ class AlbConstruct(BaseConstruct):
             vpc=vpc,
             internet_facing=True,
             security_group=security_group,
-            load_balancer_name=f"outlier-alb-{self.environment}"
+            load_balancer_name=f"outlier-service-alb-{self.environment}"
         )
 
         # Create main service target group (no changes)
