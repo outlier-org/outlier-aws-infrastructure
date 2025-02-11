@@ -56,7 +56,7 @@ class AlbConstruct(BaseConstruct):
             port=443,
             protocol=elbv2.ApplicationProtocol.HTTPS,
             certificates=[certificate],
-            ssl_policy=elbv2.SslPolicy.TLS13_1_2_2021_06,
+            ssl_policy=elbv2.SslPolicy.RECOMMENDED,
             default_target_groups=[self._main_target_group]
         )
 
