@@ -80,6 +80,12 @@ class NetworkConstruct(BaseConstruct):
             description="Allow outbound to targets"
         )
 
+        self.alb_sg.add_egress_rule(
+            peer=ec2.Peer.security_group_id(self.service_sg.security_group_id),
+            connection=ec2.Port.tcp(1337),
+            description="Allow outbound to targets"
+        )
+
         # Service rules
         self.service_sg.add_ingress_rule(
             peer=ec2.Peer.security_group_id(self.alb_sg.security_group_id),
