@@ -37,22 +37,3 @@ class BaseStack(cdk.Stack):
             service_target_group=alb.main_target_group,
             jobs_target_group=alb.jobs_target_group
         )
-
-        # Create Pipeline resources (handles deployments and updates)
-        # pipeline = CodePipelineConstruct(
-        #     self,
-        #     "PipelineConstruct",
-        #     ecs_cluster=ecs.cluster,
-        #     ecs_service=ecs.service,
-        #     ecs_jobs_service=ecs.jobs_service,
-        #     prod_listener=alb.production_listener,
-        #     test_listener=alb.test_listener,
-        #     service_target_groups=[
-        #         alb.service_tg_1,
-        #         alb.service_tg_2
-        #     ],
-        #     jobs_target_groups=[
-        #         alb.jobs_tg_1,
-        #         alb.jobs_tg_2
-        #     ]
-        # )

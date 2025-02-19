@@ -2,6 +2,7 @@ import os
 
 import aws_cdk as cdk
 from stacks.base_stack import BaseStack
+from stacks.ecs_blue_green_stack import EcsBlueGreenStack
 from stacks.github_oidc_stack import GitHubOIDCStack
 
 # Inherit environment variables from npm run commands (displayed in .projen/tasks.json)
@@ -14,8 +15,10 @@ app = cdk.App()
 # Add GitHub OpenID Connect support and create an IAM role for GitHub
 GitHubOIDCStack(app, f"GitHubOIDCStack-{environment}", env=aws_environment)
 
-# Create a new stack with your resources
+# Create a base stack which contains all of our main resources
 BaseStack(app, f"BaseStack-{environment}", env=aws_environment)
+
+EcsBlueGreenStack(app, f"EcsBlueGreenStack-{environment}", env=aws_environment)
 
 # Tag all resources in CloudFormation with the environment name
 cdk.Tags.of(app).add("Environment", environment)
