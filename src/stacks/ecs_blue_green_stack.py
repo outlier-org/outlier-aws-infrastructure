@@ -266,7 +266,7 @@ class EcsBlueGreenStack(cdk.Stack):
         pipeline = codepipeline.Pipeline(
             self,
             "Pipeline",
-            pipeline_name=f"outlier-blue-green-{self.environment}",
+            pipeline_name=f"outlier-blue-green-nightly",
             artifact_bucket=artifact_bucket
         )
 
