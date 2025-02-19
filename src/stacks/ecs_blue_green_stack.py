@@ -253,7 +253,7 @@ class EcsBlueGreenStack(cdk.Stack):
         pipeline = codepipeline.Pipeline(
             self,
             "Pipeline",
-            pipeline_name=f"outlier-blue-green-{self.environment}-pipeline"
+            pipeline_name=f"outlier-blue-green-{self.environment}"
         )
 
         # Source Stage
