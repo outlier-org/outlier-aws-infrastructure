@@ -217,7 +217,7 @@ class EcsBlueGreenStack(cdk.Stack):
                 )
             ]
         )
-        
+
         #initially attach to blue target group
         self.service.attach_to_application_target_group(self.blue_target_group)
 

@@ -21,6 +21,10 @@ def github_cicd(gh, account, env, python_version):
             "deploy": {
                 "name": f"Deploy CDK stacks to {env} AWS account",
                 "runsOn": ["ubuntu-latest"],
+                "concurrency": {
+                    "group": f"cdk-deploy-{env}",
+                    "cancel-in-progress": False
+                },
                 "permissions": {
                     "actions": github.workflows.JobPermission.WRITE,
                     "contents": github.workflows.JobPermission.READ,

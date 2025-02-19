@@ -13,6 +13,7 @@ __pycache__
 **/cdk-test-report.xml
 *node_modules*
 coverage/
+former_2_output.py
 node_modules/
 !/.gitattributes
 !/.projen/tasks.json
