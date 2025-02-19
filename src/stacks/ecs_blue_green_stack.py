@@ -232,7 +232,7 @@ class EcsBlueGreenStack(cdk.Stack):
         # Add CodeStar connection permissions to pipeline role
         pipeline.role.add_to_policy(iam.PolicyStatement(
             actions=["codestar-connections:UseConnection"],
-            resources=["arn:aws:codestar-connections:us-east-1:528757783796:connection/ddd91232-5089-40b4-bc84-7ba9e4d1c20f"]
+            resources=["arn:aws:codeconnections:us-east-1:528757783796:connection/ddd91232-5089-40b4-bc84-7ba9e4d1c20f"]
         ))
 
         source_output = codepipeline.Artifact()
@@ -247,7 +247,7 @@ class EcsBlueGreenStack(cdk.Stack):
                     owner="outlier-org",
                     repo="outlier-api",
                     branch="staging",
-                    connection_arn="arn:aws:codestar-connections:us-east-1:528757783796:connection/ddd91232-5089-40b4-bc84-7ba9e4d1c20f",
+                    connection_arn="arn:aws:codeconnections:us-east-1:528757783796:connection/ddd91232-5089-40b4-bc84-7ba9e4d1c20f",
                     output=source_output
                 )
             ]
