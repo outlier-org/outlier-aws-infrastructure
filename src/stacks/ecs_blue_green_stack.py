@@ -219,6 +219,17 @@ class EcsBlueGreenStack(cdk.Stack):
         build_project.role.add_managed_policy(
             iam.ManagedPolicy.from_aws_managed_policy_name("AmazonEC2ContainerRegistryPowerUser")
         )
+        # Add Custom ECR permissions
+        build_project.role.add_to_policy(iam.PolicyStatement(
+            actions=[
+                "ecr:GetAuthorizationToken",
+                "ecr:BatchCheckLayerAvailability",
+                "ecr:GetDownloadUrlForLayer",
+                "ecr:BatchGetImage",
+                "ecr:PutImage"
+            ],
+            resources=["*"]
+        ))
         build_project.role.add_managed_policy(
             iam.ManagedPolicy.from_aws_managed_policy_name("SecretsManagerReadWrite")
         )
