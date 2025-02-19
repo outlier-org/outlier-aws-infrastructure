@@ -203,8 +203,23 @@ class EcsBlueGreenStack(cdk.Stack):
             ),
             deployment_controller=ecs.DeploymentController(
                 type=ecs.DeploymentControllerType.CODE_DEPLOY
-            )
+            ),
+            # Add these lines to connect to ALB
+            load_balancers=[
+                ecs.LoadBalancerAttachment(
+                    container_name="ServiceContainer",  # Must match the container name in task definition
+                    container_port=1337,
+                    listener=ecs.ApplicationListener.from_application_listener(
+                        self,
+                        "ProdListenerReference",
+                        self.prod_listener
+                    )
+                )
+            ]
         )
+        
+        #initially attach to blue target group
+        self.service.attach_to_application_target_group(self.blue_target_group)
 
         # Create CodeDeploy Application
         self.app = codedeploy.EcsApplication(
