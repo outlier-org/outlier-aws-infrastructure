@@ -165,8 +165,16 @@ class EcsBlueGreenStack(cdk.Stack):
             ),
             deployment_controller=ecs.DeploymentController(
                 type=ecs.DeploymentControllerType.CODE_DEPLOY
-            )
+            ),
+            load_balancers=[
+                ecs.CfnService.LoadBalancerProperty(
+                    target_group_arn=self.blue_target_group.target_group_arn,
+                    container_name="AppContainer",
+                    container_port=1337
+                )
+            ]
         )
+
 
         # CodeDeploy Setup
         codedeploy_app = codedeploy.EcsApplication(
