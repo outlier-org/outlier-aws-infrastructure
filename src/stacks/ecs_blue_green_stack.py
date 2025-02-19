@@ -139,19 +139,21 @@ class EcsBlueGreenStack(cdk.Stack):
             task_role=task_execution_role
         )
 
-        # 🔥 Define AppContainer with Port Mappings (Fix #1)
+        # Use an existing ECR image in the placeholder Task Definition
         app_container = task_definition.add_container(
             "AppContainer",
             image=ecs.ContainerImage.from_ecr_repository(
                 ecr.Repository.from_repository_name(
-                    self, "TempRepo", "outlier-ecr"
-                ), "latest"
+                    self, "OutlierEcrRepo", "outlier-ecr"
+                ),
+                tag="latest"  # Matches the latest pushed image in ECR
             ),
             memory_limit_mib=512,
             cpu=256
         )
 
-        # Add required port mapping for ECS to work!
+
+# Add required port mapping for ECS to work!
         app_container.add_port_mappings(
             ecs.PortMapping(container_port=1337)  # Matches Target Group port
         )
