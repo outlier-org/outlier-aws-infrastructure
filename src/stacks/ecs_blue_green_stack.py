@@ -111,16 +111,26 @@ class EcsBlueGreenStack(cdk.Stack):
             self, "TaskExecutionRole",
             f"arn:aws:iam::{self.account}:role/ecsTaskExecutionRole"
         )
-        task_execution_role.add_to_policy(iam.PolicyStatement(
-            actions=[
-                "secretsmanager:GetSecretValue",
-                "ecr:GetAuthorizationToken",
-                "ecr:BatchCheckLayerAvailability",
-                "ecr:GetDownloadUrlForLayer",
-                "ecr:BatchGetImage"
-            ],
-            resources=["*"]
-        ))
+
+        # Attach an inline policy
+        task_execution_role.attach_inline_policy(
+            iam.Policy(
+                self, "TaskExecutionRolePolicy",
+                statements=[
+                    iam.PolicyStatement(
+                        actions=[
+                            "secretsmanager:GetSecretValue",
+                            "ecr:GetAuthorizationToken",
+                            "ecr:BatchCheckLayerAvailability",
+                            "ecr:GetDownloadUrlForLayer",
+                            "ecr:BatchGetImage"
+                        ],
+                        resources=["*"]
+                    )
+                ]
+            )
+        )
+
 
         # Placeholder Task Definition (structure only)
         task_definition = ecs.FargateTaskDefinition(
