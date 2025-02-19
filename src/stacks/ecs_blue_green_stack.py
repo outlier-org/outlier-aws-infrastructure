@@ -139,18 +139,21 @@ class EcsBlueGreenStack(cdk.Stack):
             task_role=task_execution_role
         )
 
-        # Placeholder Containers (actual config comes from JSON)
-        task_definition.add_container(
+        # 🔥 Define AppContainer with Port Mappings (Fix #1)
+        app_container = task_definition.add_container(
             "AppContainer",
             image=ecs.ContainerImage.from_ecr_repository(
                 ecr.Repository.from_repository_name(
                     self, "TempRepo", "outlier-ecr"
                 ), "latest"
-            )
+            ),
+            memory_limit_mib=512,
+            cpu=256
         )
-        task_definition.add_container(
-            "DatadogContainer",
-            image=ecs.ContainerImage.from_registry("datadog/agent:latest")
+
+        # Add required port mapping for ECS to work!
+        app_container.add_port_mappings(
+            ecs.PortMapping(container_port=1337)  # Matches Target Group port
         )
 
         self.service = ecs.FargateService(
