@@ -153,27 +153,22 @@ class EcsBlueGreenStack(cdk.Stack):
             image=ecs.ContainerImage.from_registry("datadog/agent:latest")
         )
 
-        # ECS Service
         self.service = ecs.FargateService(
             self, "BlueGreenService",
             cluster=self.cluster,
             task_definition=task_definition,
-            desired_count=0,  # Critical initial state
+            desired_count=0,
             security_groups=[self.service_security_group],
             vpc_subnets=ec2.SubnetSelection(
                 subnet_type=ec2.SubnetType.PRIVATE_WITH_EGRESS
             ),
             deployment_controller=ecs.DeploymentController(
                 type=ecs.DeploymentControllerType.CODE_DEPLOY
-            ),
-            load_balancers=[
-                ecs.CfnService.LoadBalancerProperty(
-                    target_group_arn=self.blue_target_group.target_group_arn,
-                    container_name="AppContainer",
-                    container_port=1337
-                )
-            ]
+            )
         )
+
+        # Attach the service to the ALB Target Group
+        self.service.attach_to_application_target_group(self.blue_target_group)
 
 
         # CodeDeploy Setup
