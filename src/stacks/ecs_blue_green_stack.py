@@ -153,7 +153,7 @@ class EcsBlueGreenStack(cdk.Stack):
         )
 
 
-# Add required port mapping for ECS to work!
+        # Add required port mapping for ECS
         app_container.add_port_mappings(
             ecs.PortMapping(container_port=1337)  # Matches Target Group port
         )
@@ -228,6 +228,12 @@ class EcsBlueGreenStack(cdk.Stack):
             artifact_bucket=artifact_bucket,
             pipeline_name="outlier-blue-green-nightly"
         )
+
+        # Add CodeStar connection permissions to pipeline role
+        pipeline.role.add_to_policy(iam.PolicyStatement(
+            actions=["codestar-connections:UseConnection"],
+            resources=["arn:aws:codestar-connections:us-east-1:528757783796:connection/ddd91232-5089-40b4-bc84-7ba9e4d1c20f"]
+        ))
 
         source_output = codepipeline.Artifact()
         build_output = codepipeline.Artifact()
