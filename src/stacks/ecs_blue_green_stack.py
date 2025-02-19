@@ -174,9 +174,9 @@ class EcsBlueGreenStack(cdk.Stack):
                 test_listener=self.test_listener,
                 blue_target_group=self.blue_target_group,
                 green_target_group=self.green_target_group,
-                termination_wait_time=Duration.minutes(5
-                                                       )
+                termination_wait_time=Duration.minutes(5)
             )
+        )
 
         # Pipeline Infrastructure
         artifact_bucket = s3.Bucket(
