@@ -32,7 +32,7 @@ class EcsBlueGreenStack(cdk.Stack):
             self,
             "AlbSecurityGroup-BlueGreen",
             vpc=self.vpc,
-            security_group_name=f"outlier-alb-blue-green-{self.environment}-sg",
+            security_group_name=f"outlier-alb-blue-green-sg",
             description="Security group for Blue/Green ALB"
         )
 
@@ -40,7 +40,7 @@ class EcsBlueGreenStack(cdk.Stack):
             self,
             "ServiceSecurityGroup-BlueGreen",
             vpc=self.vpc,
-            security_group_name=f"outlier-service-blue-green-{self.environment}-sg",
+            security_group_name=f"outlier-service-blue-green-sg",
             description="Security group for Blue/Green ECS Service"
         )
 
@@ -101,7 +101,7 @@ class EcsBlueGreenStack(cdk.Stack):
             vpc=self.vpc,
             internet_facing=True,
             security_group=self.alb_security_group,
-            load_balancer_name=f"outlier-blue-green-{self.environment}"
+            load_balancer_name=f"outlier-blue-green"
         )
 
         # Create listeners
@@ -122,7 +122,7 @@ class EcsBlueGreenStack(cdk.Stack):
             self,
             "BlueGreenCluster",
             vpc=self.vpc,
-            cluster_name=f"outlier-blue-green-{self.environment}"
+            cluster_name=f"outlier-blue-green"
         )
 
         # Import existing ECR repository
@@ -143,7 +143,7 @@ class EcsBlueGreenStack(cdk.Stack):
         log_group = logs.LogGroup(
             self,
             "BlueGreenLogGroup",
-            log_group_name=f"/ecs/outlier-blue-green-{self.environment}",
+            log_group_name=f"/ecs/outlier-blue-green",
             removal_policy=cdk.RemovalPolicy.DESTROY
         )
 
@@ -151,7 +151,7 @@ class EcsBlueGreenStack(cdk.Stack):
         task_definition = ecs.FargateTaskDefinition(
             self,
             "BlueGreenTaskDef",
-            family=f"outlier-blue-green-{self.environment}",
+            family=f"outlier-blue-green",
             cpu=2048,
             memory_limit_mib=4096,
             execution_role=task_execution_role,
@@ -210,7 +210,7 @@ class EcsBlueGreenStack(cdk.Stack):
         self.app = codedeploy.EcsApplication(
             self,
             "BlueGreenApp",
-            application_name=f"outlier-blue-green-{self.environment}"
+            application_name=f"outlier-blue-green"
         )
 
         # Create CodeDeploy Deployment Group
@@ -219,7 +219,7 @@ class EcsBlueGreenStack(cdk.Stack):
             "BlueGreenDeploymentGroup",
             application=self.app,
             service=self.service,
-            deployment_group_name=f"outlier-blue-green-{self.environment}",
+            deployment_group_name=f"outlier-blue-green",
             blue_green_deployment_config=codedeploy.EcsBlueGreenDeploymentConfig(
                 listener=self.prod_listener,
                 test_listener=self.test_listener,
@@ -234,7 +234,7 @@ class EcsBlueGreenStack(cdk.Stack):
         artifact_bucket = s3.Bucket(
             self,
             "ArtifactBucket",
-            bucket_name=f"outlier-blue-green-artifacts-{self.environment}-{self.account}",
+            bucket_name=f"outlier-blue-green-artifacts",
             removal_policy=cdk.RemovalPolicy.DESTROY,
             auto_delete_objects=True
         )
@@ -243,7 +243,7 @@ class EcsBlueGreenStack(cdk.Stack):
         build_project = codebuild.PipelineProject(
             self,
             "BuildProject",
-            project_name=f"outlier-blue-green-{self.environment}",
+            project_name=f"outlier-blue-green",
             environment=codebuild.BuildEnvironment(
                 build_image=codebuild.LinuxBuildImage.STANDARD_7_0,
                 privileged=True
