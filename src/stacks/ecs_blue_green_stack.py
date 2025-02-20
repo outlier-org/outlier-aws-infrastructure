@@ -211,7 +211,7 @@ class EcsBlueGreenStack(cdk.Stack):
             ),
             environment_variables={
                 "REPOSITORY_URI": codebuild.BuildEnvironmentVariable(
-                    value=f"{self.account}.dkr.ecr.{self.region}.amazonaws.com/{self.repository.repository_name}"
+                    value=f"{self.account}.dkr.ecr.{self.region}.amazonaws.com/outlier-ecr"
                 ),
                 "SERVICE_NAME": codebuild.BuildEnvironmentVariable(
                     value=f"outlier-service-{self.environment}-test"
