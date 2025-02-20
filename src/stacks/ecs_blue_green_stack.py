@@ -141,7 +141,7 @@ class EcsBlueGreenStack(cdk.Stack):
 
         # Use an existing ECR image in the placeholder Task Definition
         app_container = task_definition.add_container(
-            "AppContainer",
+            "Outlier-Service-Container-nightly",
             image=ecs.ContainerImage.from_ecr_repository(
                 ecr.Repository.from_repository_name(
                     self, "OutlierEcrRepo", "outlier-ecr"
