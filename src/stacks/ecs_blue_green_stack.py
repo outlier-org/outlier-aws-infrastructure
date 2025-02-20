@@ -210,7 +210,7 @@ class EcsBlueGreenStack(cdk.Stack):
                 privileged=True
             ),
             environment_variables={
-                "ECR_REPO": codebuild.BuildEnvironmentVariable(
+                "REPOSITORY_URI": codebuild.BuildEnvironmentVariable(
                     value=f"{self.account}.dkr.ecr.{self.region}.amazonaws.com/outlier-ecr"
                 )
             },
