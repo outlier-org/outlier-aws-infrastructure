@@ -61,7 +61,7 @@ class EcsConstruct(BaseConstruct):
         service_container = service_task_def.add_container(
             "ServiceContainer",
             container_name=f"Outlier-Service-Container-{self.environment}",
-            image=ecs.ContainerImage.from_registry("528757783796.dkr.ecr.us-east-1.amazonaws.com/outlier-ecr:latest"),
+            image=ecs.ContainerImage.from_registry("528757783796.dkr.ecr.us-east-1.amazonaws.com/outlier-ecr:42"),
             cpu=3072,
             memory_limit_mib=6144,
             memory_reservation_mib=5120,
