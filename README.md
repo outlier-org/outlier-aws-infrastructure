@@ -23,12 +23,13 @@ This repository contains Outlier's AWS CDK project. It defines infrastructure as
 
 #### Which Outlier AWS Resources are ✅ managed by this project?
 - Our core application stack.
-  - ✅ ECR (App Images)
+  - ✅ ECR (App Build Images)
   - ✅ ALB (App Load Balancer)
   - ✅ ECS (App Containers)
-  - ✅ RDS (App Database)
+  - ✅ Aurora PSQL 16.4 (App Database)
   - ✅ CodePipeline (App CI/CD)
   - ✅ S3 Buckets for Application (App Blob Storage)
+  - ✅ Application IAM Users, Roles, and Policies
 
 #### Which Outlier AWS Resources are NOT ❌ managed by this project?
 - Any non-core application resources.

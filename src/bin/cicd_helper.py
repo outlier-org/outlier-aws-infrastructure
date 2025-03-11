@@ -44,6 +44,7 @@ def github_cicd(gh, account, env, python_version):
                         "with": {
                             "role-to-assume": f"arn:aws:iam::{account}:role/GitHubDeployRole",
                             "aws-region": os.getenv("CDK_DEFAULT_REGION"),
+                            "role-session-duration": "7200"
                         },
                     },
                     {
