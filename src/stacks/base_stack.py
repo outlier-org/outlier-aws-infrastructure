@@ -5,6 +5,7 @@ from custom_constructs.network_construct import NetworkConstruct
 # from custom_constructs.storage_construct import StorageConstruct
 from custom_constructs.iam_construct import IamConstruct
 from custom_constructs.alb_construct import AlbConstruct
+from custom_constructs.database_construct import DatabaseConstruct
 from custom_constructs.ecs_construct import EcsConstruct
 
 class BaseStack(cdk.Stack):
@@ -26,6 +27,14 @@ class BaseStack(cdk.Stack):
             "AlbConstruct",
             vpc=network.vpc,
             security_group=network.alb_security_group
+        )
+
+        # Add the database construct - using the existing RDS security group
+        database = DatabaseConstruct(
+            self,
+            "DatabaseConstruct",
+            vpc=network.vpc,
+            security_group=network.rds_security_group
         )
 
         # Create ECS resources
