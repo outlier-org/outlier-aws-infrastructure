@@ -46,7 +46,7 @@ class DatabaseConstruct(BaseConstruct):
             self,
             "NightlyDBCluster",
             engine=rds.DatabaseClusterEngine.aurora_postgres(version=pg_engine_version),
-            instances=2,
+            instances=1,
             instance_props=rds.InstanceProps(
                 vpc=vpc,
                 instance_type=ec2.InstanceType.of(
