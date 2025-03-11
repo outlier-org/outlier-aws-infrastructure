@@ -21,7 +21,7 @@ class AlbConstruct(BaseConstruct):
         certificate = acm.Certificate.from_certificate_arn(
             self,
             "Certificate",
-            "arn:aws:acm:us-east-1:528757783796:certificate/32cd5961-1a5d-4052-876a-0916d0c1c782"
+            "arn:aws:acm:us-east-1:528757783796:certificate/71eac7f3-f4f4-4a6c-a32b-d6dad41f94e8"
         )
 
         # Create ALB (no changes)
