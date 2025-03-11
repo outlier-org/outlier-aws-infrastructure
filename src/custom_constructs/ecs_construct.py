@@ -54,7 +54,8 @@ class EcsConstruct(BaseConstruct):
         log_group = logs.LogGroup(
             self,
             "ServiceLogGroup",
-            log_group_name=f"/ecs/Outlier-Service-{self.environment}",
+            log_group_name=f"/ecs/Outlier-Service-{self.resource_identifier}",
+            removal_policy=cdk.RemovalPolicy.DESTROY
         )
 
         # Add main container

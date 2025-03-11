@@ -1,4 +1,5 @@
 import os
+from aws_cdk import Names
 from typing import Optional
 
 import aws_cdk as cdk
@@ -28,3 +29,7 @@ class BaseConstruct(Construct):
         """Add standard tags to AWS resources"""
         for key, value in self.tags.items():
             cdk.Tags.of(resource).add(key, value)
+
+    @property
+    def resource_identifier(self):
+        return f"{self.environment}-{Names.unique_id(self)}"
