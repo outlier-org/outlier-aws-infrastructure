@@ -59,7 +59,7 @@ class DatabaseConstruct(BaseConstruct):
                 publicly_accessible=False,
             ),
             snapshot_identifier="rds:outlier-nightly-db-cluster-2025-03-11-03-37",
-            cluster_identifier="outlier-nightly-db-cluster-cdk",
+            cluster_identifier="outlier-nightly-db-cluster",
             port=5432,
             instance_identifier_base="outlier-nightly-db",
             vpc_subnets=ec2.SubnetSelection(
