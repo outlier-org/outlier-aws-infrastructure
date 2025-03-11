@@ -67,8 +67,8 @@ class DatabaseConstruct(BaseConstruct):
                 availability_zones=["us-east-1b", "us-east-1c"]
             ),
             storage_encrypted=True,
-            deletion_protection=True,
-            removal_policy=cdk.RemovalPolicy.RETAIN,
+            deletion_protection=False,
+            removal_policy=cdk.RemovalPolicy.DESTROY,
             parameter_group=cluster_param_group,
             cloudwatch_logs_exports=["postgresql"]
         )
