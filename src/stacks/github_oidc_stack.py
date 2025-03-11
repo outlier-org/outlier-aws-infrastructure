@@ -1,4 +1,4 @@
-from aws_cdk import CfnOutput, Stack
+from aws_cdk import CfnOutput, Stack, Duration
 from aws_cdk.aws_iam import ManagedPolicy
 from aws_cdk_github_oidc import GithubActionsIdentityProvider, GithubActionsRole
 from bin.git_helper import get_git_repo_details
@@ -20,6 +20,7 @@ class GitHubOIDCStack(Stack):
             owner=git_owner,
             repo=repo_name,
             role_name="GitHubDeployRole",
+            max_session_duration=Duration.hours(2),
             managed_policies=[ManagedPolicy.from_aws_managed_policy_name("AdministratorAccess")],
         )
 
