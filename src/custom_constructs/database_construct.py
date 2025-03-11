@@ -58,7 +58,7 @@ class DatabaseConstruct(BaseConstruct):
                 enable_performance_insights=False,
                 publicly_accessible=False,
             ),
-            snapshot_identifier="rds:outlier-nightly-db-cluster-2025-03-11-03-37",
+            snapshot_identifier="outlier-nightly-db-cluster-snapshot-03-11",
             cluster_identifier="outlier-nightly-db-cluster",
             port=5432,
             instance_identifier_base="outlier-nightly-db",
