@@ -59,9 +59,9 @@ class DatabaseConstruct(BaseConstruct):
                 publicly_accessible=False,
             ),
             snapshot_identifier="rds:outlier-nightly-db-cluster-2025-03-11-03-37",
-            cluster_identifier="outlier-nightly-db-cluster",
+            cluster_identifier="outlier-nightly-db-cluster-cdk",
             port=5432,
-            instance_identifier_base="outlier-nightly-db",
+            instance_identifier_base="outlier-nightly-db-cdk",
             vpc_subnets=ec2.SubnetSelection(
                 subnet_type=ec2.SubnetType.PRIVATE_WITH_EGRESS,
                 availability_zones=["us-east-1b", "us-east-1c"]
