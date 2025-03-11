@@ -1,4 +1,4 @@
-# src/custom_constructs/database_construct.py - Simplified
+# src/custom_constructs/database_construct.py - With version fix
 from aws_cdk import aws_ec2 as ec2
 from aws_cdk import aws_rds as rds
 import aws_cdk as cdk
@@ -9,13 +9,14 @@ class DatabaseConstruct(BaseConstruct):
     def __init__(self, scope: Construct, id: str, vpc: ec2.IVpc, security_group: ec2.ISecurityGroup):
         super().__init__(scope, id)
 
+        # Define PostgreSQL 16.4 version manually since it might not be in CDK enum yet
+        pg_engine_version = rds.AuroraPostgresEngineVersion.of("16.4", "16")
+
         # Create custom cluster parameter group with Zero-ETL settings
         cluster_param_group = rds.ParameterGroup(
             self,
             "CustomClusterParamGroup",
-            engine=rds.DatabaseClusterEngine.aurora_postgres(
-                version=rds.AuroraPostgresEngineVersion.VER_16_4
-            ),
+            engine=rds.DatabaseClusterEngine.aurora_postgres(version=pg_engine_version),
             description="Contains unique parameters for: Zero-ETL, PSQL slow-query-logging",
             parameters={
                 "aurora.enhanced_logical_replication": "1",
@@ -29,9 +30,7 @@ class DatabaseConstruct(BaseConstruct):
         instance_param_group = rds.ParameterGroup(
             self,
             "CustomInstanceParamGroup",
-            engine=rds.DatabaseClusterEngine.aurora_postgres(
-                version=rds.AuroraPostgresEngineVersion.VER_16_4
-            ),
+            engine=rds.DatabaseClusterEngine.aurora_postgres(version=pg_engine_version),
             description="Contains unique parameters for: PSQL slow-query-logging",
             parameters={
                 "auto_explain.log_analyze": "1",
@@ -46,9 +45,7 @@ class DatabaseConstruct(BaseConstruct):
         self.db_cluster = rds.DatabaseClusterFromSnapshot(
             self,
             "NightlyDBCluster",
-            engine=rds.DatabaseClusterEngine.aurora_postgres(
-                version=rds.AuroraPostgresEngineVersion.VER_16_4
-            ),
+            engine=rds.DatabaseClusterEngine.aurora_postgres(version=pg_engine_version),
             instances=2,
             instance_props=rds.InstanceProps(
                 vpc=vpc,
