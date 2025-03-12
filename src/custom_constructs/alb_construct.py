@@ -2,6 +2,8 @@ from aws_cdk import (
     aws_ec2 as ec2,
     aws_elasticloadbalancingv2 as elbv2,
     aws_certificatemanager as acm,
+    aws_route53 as route53,
+    aws_route53_targets as targets,
     Duration
 )
 from constructs import Construct
@@ -17,14 +19,7 @@ class AlbConstruct(BaseConstruct):
     ):
         super().__init__(scope, id)
 
-        # Import existing certificate
-        certificate = acm.Certificate.from_certificate_arn(
-            self,
-            "Certificate",
-            "arn:aws:acm:us-east-1:528757783796:certificate/71eac7f3-f4f4-4a6c-a32b-d6dad41f94e8"
-        )
-
-        # Create ALB (no changes)
+        # First create the ALB
         self._alb = elbv2.ApplicationLoadBalancer(
             self,
             "ALB",
@@ -32,6 +27,31 @@ class AlbConstruct(BaseConstruct):
             internet_facing=True,
             security_group=security_group,
             load_balancer_name=f"outlier-service-alb-{self.environment}"
+        )
+
+        hosted_zone = route53.HostedZone.from_hosted_zone_attributes(
+            self,
+            "ExistingHostedZone",
+            hosted_zone_id="Z05574991AFW5NGZ1X8DH",
+            zone_name="nightly.savvasoutlier.com"
+        )
+
+        # Create A record (CDK managed)
+        route53.ARecord(
+            self,
+            "ApiDnsRecord",
+            zone=hosted_zone,
+            record_name="api",  # This will create api.nightly.savvasoutlier.com
+            target=route53.RecordTarget.from_alias(
+                targets.LoadBalancerTarget(self._alb)
+            )
+        )
+
+        # Import certificate (verify it covers *.nightly.savvasoutlier.com)
+        certificate = acm.Certificate.from_certificate_arn(
+            self,
+            "Certificate",
+            "arn:aws:acm:us-east-1:528757783796:certificate/71eac7f3-f4f4-4a6c-a32b-d6dad41f94e8"
         )
 
         # Create main service target group (no changes)
@@ -60,7 +80,7 @@ class AlbConstruct(BaseConstruct):
             default_target_groups=[self._main_target_group]
         )
 
-        # HTTP Listener (modified to redirect to HTTPS)
+        # HTTP Listener (redirects to HTTPS)
         self._http_listener = self._alb.add_listener(
             "HttpListener",
             port=80,
@@ -71,7 +91,7 @@ class AlbConstruct(BaseConstruct):
             )
         )
 
-        # Jobs service target group (no changes)
+        # Jobs service target group
         self._jobs_target_group = elbv2.ApplicationTargetGroup(
             self,
             "JobsServiceTargetGroup",
@@ -87,7 +107,7 @@ class AlbConstruct(BaseConstruct):
             )
         )
 
-        # Add jobs listener rule to HTTPS listener
+        # Jobs listener rule on HTTPS listener
         self._https_listener.add_action(
             "JobsListenerRule",
             conditions=[
