@@ -40,10 +40,11 @@ class DatabaseConstruct(BaseConstruct):
         )
 
         # Aurora PSQL 16.4 DB Cluster/Instances
-        self.db_cluster = rds.DatabaseCluster(
+        self.db_cluster = rds.DatabaseClusterFromSnapshot(
             self,
             "NightlyDBCluster",
             engine=rds.DatabaseClusterEngine.aurora_postgres(version=pg_engine_version),
+            snapshot_identifier="outlier-nightly-db-cluster-snapshot-03-11",
             cluster_identifier="outlier-nightly-db-cluster",
             writer=rds.ClusterInstance.serverless_v2(
                 "writer",
