@@ -30,6 +30,9 @@ This repository contains Outlier's AWS CDK project. It defines infrastructure as
   - ✅ CodePipeline (App CI/CD)
   - ✅ S3 Buckets for Application (App Blob Storage)
   - ✅ Application IAM Users, Roles, and Policies
+  - ✅ Route53 A Record - "api.nightly.savvasoutlier.com"
+    - We are ONLY managing this one record and NO other Route53 infrastructure in this project.
+    - Why? Because of how tightly coupled the A record and the ALB are, it made the most sense to me to keep them managed in the same place. -Dobson
 
 #### Which Outlier AWS Resources are NOT ❌ managed by this project?
 - Any non-core application resources.
@@ -44,6 +47,9 @@ This repository contains Outlier's AWS CDK project. It defines infrastructure as
     - We do, however, dynamically fetch/import and reference these values in this project as needed.
   - ❌ ACM Certificates
     - Why? Certificates often have their own lifecycle outside of the core application resources, sometimes with other Savvas parties needing to make changes to them. Because of this, I chose to leave their management in the AWS console. 
+    - We do, however, dynamically import and reference these values in this project.
+  - ❌ Route53 / Hosted Zones (not the api.nightly.savvasoutlier.com A record itself, we are managing that in the CDK 100%)
+    - Why? We have different types of stakeholders that would like visibility and control over this, outside of the CDK.
     - We do, however, dynamically import and reference these values in this project.
   - ❌ Redshift (Data Warehouse)
   - ❌ Firehose, DMS, DataSync and other non-application-stack services.
