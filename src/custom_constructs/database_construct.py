@@ -44,29 +44,31 @@ class DatabaseConstruct(BaseConstruct):
             self,
             "NightlyDBCluster",
             engine=rds.DatabaseClusterEngine.aurora_postgres(version=pg_engine_version),
-            instances=2,
-            instance_props=rds.InstanceProps(
-                vpc=vpc,
-                security_groups=[security_group],
-                parameter_group=instance_param_group,
-                enable_performance_insights=False,
-                publicly_accessible=False,
+            cluster_identifier="outlier-nightly-db-cluster",
+            writer=rds.ClusterInstance.serverless_v2(
+                "writer",
+                scale_with_writer=True
             ),
+            readers=[
+                rds.ClusterInstance.serverless_v2(
+                    "reader1",
+                    scale_with_writer=False  # Will scale based on read load
+                )
+            ],
             serverless_v2_min_capacity=0.5,  # Min 0.5 ACU = ~1GB RAM
             serverless_v2_max_capacity=4,  # Max 4 ACU = ~8GB RAM
-            writer_instance_props=rds.InstanceProps(
-                instance_type=ec2.InstanceType.UNDEFINED  # Required for Serverless v2
-            ),
-            cluster_identifier="outlier-nightly-db-cluster",
             port=5432,
             instance_identifier_base="outlier-nightly-db",
+            vpc=vpc,
             vpc_subnets=ec2.SubnetSelection(
                 subnet_type=ec2.SubnetType.PRIVATE_WITH_EGRESS,
                 availability_zones=["us-east-1b", "us-east-1c"]
             ),
+            security_groups=[security_group],
+            parameter_group=cluster_param_group,
             storage_encrypted=True,
             deletion_protection=True,
-            parameter_group=cluster_param_group,
+            removal_policy=cdk.RemovalPolicy.RETAIN,
             cloudwatch_logs_exports=["postgresql"]
         )
 
