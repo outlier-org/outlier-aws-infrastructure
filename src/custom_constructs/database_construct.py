@@ -1,4 +1,3 @@
-# src/custom_constructs/database_construct.py - With version fix
 from aws_cdk import aws_ec2 as ec2
 from aws_cdk import aws_rds as rds
 import aws_cdk as cdk
@@ -9,15 +8,15 @@ class DatabaseConstruct(BaseConstruct):
     def __init__(self, scope: Construct, id: str, vpc: ec2.IVpc, security_group: ec2.ISecurityGroup):
         super().__init__(scope, id)
 
-        # Define PostgreSQL 16.4 version manually since it might not be in CDK enum yet
+        # Define PostgreSQL 16.4 version manually since it apparently isn't in CDK enums yet
         pg_engine_version = rds.AuroraPostgresEngineVersion.of("16.4", "16")
 
-        # Create custom cluster parameter group with Zero-ETL settings
+        # Parameter Groups
         cluster_param_group = rds.ParameterGroup(
             self,
             "CustomClusterParamGroup",
             engine=rds.DatabaseClusterEngine.aurora_postgres(version=pg_engine_version),
-            description="Contains unique parameters for: Zero-ETL, PSQL slow-query-logging",
+            description="Contains unique parameters needed for: AWS Zero-ETL",
             parameters={
                 "aurora.enhanced_logical_replication": "1",
                 "aurora.logical_replication_backup": "0",
@@ -26,7 +25,6 @@ class DatabaseConstruct(BaseConstruct):
             }
         )
 
-        # Create custom instance parameter group with slow query logging settings
         instance_param_group = rds.ParameterGroup(
             self,
             "CustomInstanceParamGroup",
@@ -41,24 +39,24 @@ class DatabaseConstruct(BaseConstruct):
             }
         )
 
-        # Create the Aurora cluster from snapshot with custom parameter groups
-        self.db_cluster = rds.DatabaseClusterFromSnapshot(
+        # Aurora PSQL 16.4 DB Cluster/Instances
+        self.db_cluster = rds.DatabaseCluster(
             self,
             "NightlyDBCluster",
             engine=rds.DatabaseClusterEngine.aurora_postgres(version=pg_engine_version),
-            instances=1,
+            instances=2,
             instance_props=rds.InstanceProps(
                 vpc=vpc,
-                instance_type=ec2.InstanceType.of(
-                    ec2.InstanceClass.R7G,
-                    ec2.InstanceSize.LARGE
-                ),
                 security_groups=[security_group],
                 parameter_group=instance_param_group,
                 enable_performance_insights=False,
                 publicly_accessible=False,
             ),
-            snapshot_identifier="outlier-nightly-db-cluster-snapshot-03-11",
+            serverless_v2_min_capacity=0.5,  # Min 0.5 ACU = ~1GB RAM
+            serverless_v2_max_capacity=4,  # Max 4 ACU = ~8GB RAM
+            writer_instance_props=rds.InstanceProps(
+                instance_type=ec2.InstanceType.UNDEFINED  # Required for Serverless v2
+            ),
             cluster_identifier="outlier-nightly-db-cluster",
             port=5432,
             instance_identifier_base="outlier-nightly-db",
@@ -67,8 +65,7 @@ class DatabaseConstruct(BaseConstruct):
                 availability_zones=["us-east-1b", "us-east-1c"]
             ),
             storage_encrypted=True,
-            deletion_protection=False,
-            removal_policy=cdk.RemovalPolicy.DESTROY,
+            deletion_protection=True,
             parameter_group=cluster_param_group,
             cloudwatch_logs_exports=["postgresql"]
         )
