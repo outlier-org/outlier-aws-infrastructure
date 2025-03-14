@@ -263,22 +263,24 @@ class EcsBlueGreenStack(cdk.Stack):
         source_output = codepipeline.Artifact("SourceArtifact")  # Match prod naming
         build_output = codepipeline.Artifact("BuildArtifact")  # Match prod naming
 
-        # Pipeline Stages
+        # Update Source stage
         pipeline.add_stage(
             stage_name="Source",
             actions=[
                 codepipeline_actions.CodeStarConnectionsSourceAction(
-                    action_name="GitHub",
+                    action_name="Source",  # Note: prod uses "Source" not "GitHub"
                     owner="outlier-org",
                     repo="outlier-api",
                     branch="staging",
                     connection_arn="arn:aws:codeconnections:us-east-1:528757783796:connection/ddd91232-5089-40b4-bc84-7ba9e4d1c20f",
-                    output=source_output
+                    output=source_output,
+                    output_artifact_format=codepipeline_actions.CodeStarSourceArtifactFormat.CODEBUILD_CLONE_REF,
+                    detect_changes=True
                 )
             ]
         )
 
-        # Update the Build stage
+        # Update Build stage
         pipeline.add_stage(
             stage_name="Build",
             actions=[
@@ -286,9 +288,18 @@ class EcsBlueGreenStack(cdk.Stack):
                     action_name="Build",
                     project=build_project,
                     input=source_output,
-                    outputs=[build_output]
+                    outputs=[build_output],
+                    environment_variables={
+                        "CLOUD_PROVIDER": {"value": "AWS"},
+                        "ENVIRONMENT": {"value": "NIGHTLY"}
+                    }
                 )
-            ]
+            ],
+            # Add retry config to match prod
+            on_failure=codepipeline.StageFailureAction.RETRY,
+            retry_configuration=codepipeline.RetryConfiguration(
+                retry_mode=codepipeline.RetryMode.ALL_ACTIONS
+            )
         )
 
         pipeline.add_stage(
