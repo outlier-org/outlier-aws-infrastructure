@@ -291,19 +291,21 @@ class EcsBlueGreenStack(cdk.Stack):
             ]
         )
 
-        # Update the Deploy stage
         pipeline.add_stage(
             stage_name="Deploy",
             actions=[
                 codepipeline_actions.CodeDeployEcsDeployAction(
                     action_name="Deploy",
                     deployment_group=self.deployment_group,
-                    app_spec_template_artifact=build_output,  # Match prod exactly
-                    app_spec_template_path="appspec_nightly.yaml",
-                    task_definition_template_artifact=build_output,  # Match prod exactly
-                    task_definition_template_path="taskdef_nightly.json",
-                    image1_artifact_name="BuildArtifact",  # Match prod exactly
-                    image1_container_name="IMAGE1_NAME"
+                    # These are the correct property names for CDK
+                    app_spec_template_file=build_output.at_path("appspec_nightly.yaml"),
+                    task_definition_template_file=build_output.at_path("taskdef_nightly.json"),
+                    container_image_inputs=[
+                        codepipeline_actions.CodeDeployEcsContainerImageInput(
+                            input=build_output,
+                            task_definition_placeholder="IMAGE1_NAME"
+                        )
+                    ]
                 )
             ]
         )
