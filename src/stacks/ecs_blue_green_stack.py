@@ -162,7 +162,6 @@ class EcsBlueGreenStack(cdk.Stack):
         self.service = ecs.FargateService(
             self, "BlueGreenService",
             cluster=self.cluster,
-            task_definition=task_definition,
             desired_count=0,
             security_groups=[self.service_security_group],
             vpc_subnets=ec2.SubnetSelection(
