@@ -261,7 +261,8 @@ class EcsBlueGreenStack(cdk.Stack):
         ))
 
         source_output = codepipeline.Artifact()
-        build_output = codepipeline.Artifact()
+        build_output_def = codepipeline.Artifact("DefinitionArtifact")
+        build_output_image = codepipeline.Artifact("ImageArtifact")
 
         # Pipeline Stages
         pipeline.add_stage(
@@ -278,6 +279,7 @@ class EcsBlueGreenStack(cdk.Stack):
             ]
         )
 
+        # Update the Build stage
         pipeline.add_stage(
             stage_name="Build",
             actions=[
@@ -285,22 +287,23 @@ class EcsBlueGreenStack(cdk.Stack):
                     action_name="Build",
                     project=build_project,
                     input=source_output,
-                    outputs=[build_output]
+                    outputs=[build_output_def, build_output_image]  # Changed to use both artifacts
                 )
             ]
         )
 
+        # Update the Deploy stage
         pipeline.add_stage(
             stage_name="Deploy",
             actions=[
                 codepipeline_actions.CodeDeployEcsDeployAction(
                     action_name="Deploy",
                     deployment_group=self.deployment_group,
-                    app_spec_template_file=build_output.at_path("appspec_nightly.yaml"),
-                    task_definition_template_file=build_output.at_path("taskdef_nightly.json"),
+                    app_spec_template_file=build_output_def.at_path("appspec_nightly.yaml"),
+                    task_definition_template_file=build_output_def.at_path("taskdef_nightly.json"),
                     container_image_inputs=[
                         codepipeline_actions.CodeDeployEcsContainerImageInput(
-                            input=build_output,
+                            input=build_output_image,  # Changed to use image artifact
                             task_definition_placeholder="IMAGE1_NAME"
                         )
                     ]
