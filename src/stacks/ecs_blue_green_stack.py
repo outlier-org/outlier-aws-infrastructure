@@ -260,8 +260,8 @@ class EcsBlueGreenStack(cdk.Stack):
             resources=["arn:aws:codeconnections:us-east-1:528757783796:connection/ddd91232-5089-40b4-bc84-7ba9e4d1c20f"]
         ))
 
-        source_output = codepipeline.Artifact()
-        build_output = codepipeline.Artifact("BuildArtifact")
+        source_output = codepipeline.Artifact("SourceArtifact")  # Match prod naming
+        build_output = codepipeline.Artifact("BuildArtifact")  # Match prod naming
 
         # Pipeline Stages
         pipeline.add_stage(
@@ -298,14 +298,12 @@ class EcsBlueGreenStack(cdk.Stack):
                 codepipeline_actions.CodeDeployEcsDeployAction(
                     action_name="Deploy",
                     deployment_group=self.deployment_group,
-                    app_spec_template_file=build_output_def.at_path("appspec_nightly.yaml"),
-                    task_definition_template_file=build_output_def.at_path("taskdef_nightly.json"),
-                    container_image_inputs=[
-                        codepipeline_actions.CodeDeployEcsContainerImageInput(
-                            input=build_output_image,  # Changed to use image artifact
-                            task_definition_placeholder="IMAGE1_NAME"
-                        )
-                    ]
+                    app_spec_template_artifact=build_output,  # Match prod exactly
+                    app_spec_template_path="appspec_nightly.yaml",
+                    task_definition_template_artifact=build_output,  # Match prod exactly
+                    task_definition_template_path="taskdef_nightly.json",
+                    image1_artifact_name="BuildArtifact",  # Match prod exactly
+                    image1_container_name="IMAGE1_NAME"
                 )
             ]
         )
