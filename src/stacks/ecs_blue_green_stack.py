@@ -261,8 +261,7 @@ class EcsBlueGreenStack(cdk.Stack):
         ))
 
         source_output = codepipeline.Artifact()
-        build_output_def = codepipeline.Artifact("DefinitionArtifact")
-        build_output_image = codepipeline.Artifact("ImageArtifact")
+        build_output = codepipeline.Artifact("BuildArtifact")
 
         # Pipeline Stages
         pipeline.add_stage(
@@ -287,7 +286,7 @@ class EcsBlueGreenStack(cdk.Stack):
                     action_name="Build",
                     project=build_project,
                     input=source_output,
-                    outputs=[build_output_def, build_output_image]  # Changed to use both artifacts
+                    outputs=[build_output]
                 )
             ]
         )
