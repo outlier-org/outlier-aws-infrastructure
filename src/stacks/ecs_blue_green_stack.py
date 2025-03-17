@@ -416,6 +416,58 @@ class EcsBlueGreenStack(cdk.Stack):
             iam.ManagedPolicy.from_aws_managed_policy_name("SecretsManagerReadWrite")
         )
 
+        # Pipeline Infrastructure
+        artifact_bucket = s3.Bucket(
+            self, "ArtifactBucket",
+            removal_policy=cdk.RemovalPolicy.DESTROY,
+            auto_delete_objects=True
+        )
+
+        # CodeBuild Project (for both services)
+        build_project = codebuild.PipelineProject(
+            self, "BuildProject",
+            environment=codebuild.BuildEnvironment(
+                build_image=codebuild.LinuxBuildImage.STANDARD_7_0,
+                privileged=True
+            ),
+            environment_variables={
+                "REPOSITORY_URI": codebuild.BuildEnvironmentVariable(
+                    value=f"{self.account}.dkr.ecr.{self.region}.amazonaws.com/outlier-ecr-nightly"
+                ),
+                "SERVICE_NAME": codebuild.BuildEnvironmentVariable(
+                    value="outlier-service-nightly"
+                ),
+                "ENVIRONMENT": codebuild.BuildEnvironmentVariable(
+                    value=self.environment.upper()
+                )
+            },
+            build_spec=codebuild.BuildSpec.from_source_filename("buildspec_nightly.yml")
+        )
+        build_project.role.add_managed_policy(
+            iam.ManagedPolicy.from_aws_managed_policy_name("AmazonEC2ContainerRegistryPowerUser")
+        )
+        build_project.role.add_to_policy(iam.PolicyStatement(
+            actions=[
+                "ecr:GetAuthorizationToken",
+                "ecr:BatchCheckLayerAvailability",
+                "ecr:GetDownloadUrlForLayer",
+                "ecr:GetRepositoryPolicy",
+                "ecr:ListImages",
+                "ecr:DescribeRepositories",
+                "ecr:ListTagsForResource",
+                "ecr:DescribeImages",
+                "ecr:BatchGetImage",
+                "ecr:InitiateLayerUpload",
+                "ecr:UploadLayerPart",
+                "ecr:CompleteLayerUpload",
+                "ecr:PutImage"
+            ],
+            resources=["*"]
+        ))
+        build_project.role.add_managed_policy(
+            iam.ManagedPolicy.from_aws_managed_policy_name("SecretsManagerReadWrite")
+        )
+
         # CodePipeline
         pipeline = codepipeline.Pipeline(
             self, "Pipeline",
@@ -429,7 +481,7 @@ class EcsBlueGreenStack(cdk.Stack):
             resources=["arn:aws:codeconnections:us-east-1:528757783796:connection/ddd91232-5089-40b4-bc84-7ba9e4d1c20f"]
         ))
 
-        # Source Stage (unchanged)
+        # Source Stage
         source_output = codepipeline.Artifact()
         pipeline.add_stage(
             stage_name="Source",
@@ -445,65 +497,44 @@ class EcsBlueGreenStack(cdk.Stack):
             ]
         )
 
-        # Build Stage for Main Service
-        main_build_output = codepipeline.Artifact()
+        # Build Stage
+        build_output = codepipeline.Artifact()
         pipeline.add_stage(
-            stage_name="BuildMain",
+            stage_name="Build",
             actions=[
                 codepipeline_actions.CodeBuildAction(
-                    action_name="BuildMain",
-                    project=main_build_project,
+                    action_name="Build",
+                    project=build_project,
                     input=source_output,
-                    outputs=[main_build_output]
-                )
-            ]
-        )
-
-        # Build Stage for Jobs Service
-        jobs_build_output = codepipeline.Artifact()
-        pipeline.add_stage(
-            stage_name="BuildJobs",
-            actions=[
-                codepipeline_actions.CodeBuildAction(
-                    action_name="BuildJobs",
-                    project=jobs_build_project,
-                    input=source_output,
-                    outputs=[jobs_build_output]
+                    outputs=[build_output]
                 )
             ]
         )
 
         # Deploy Stage for Main Service
         pipeline.add_stage(
-            stage_name="DeployMain",
+            stage_name="Deploy",
             actions=[
                 codepipeline_actions.CodeDeployEcsDeployAction(
-                    action_name="DeployMain",
+                    action_name="OutlierServiceDeployment",
                     deployment_group=self.main_deployment_group,
-                    app_spec_template_file=main_build_output.at_path("appspec_nightly.yaml"),
-                    task_definition_template_file=main_build_output.at_path("taskdef_nightly.json"),
+                    app_spec_template_file=build_output.at_path("appspec_nightly.yaml"),
+                    task_definition_template_file=build_output.at_path("taskdef_nightly.json"),
                     container_image_inputs=[
                         codepipeline_actions.CodeDeployEcsContainerImageInput(
-                            input=main_build_output,
+                            input=build_output,
                             task_definition_placeholder="IMAGE1_NAME"
                         )
                     ]
-                )
-            ]
-        )
-
-        # Deploy Stage for Jobs Service
-        pipeline.add_stage(
-            stage_name="DeployJobs",
-            actions=[
+                ),
                 codepipeline_actions.CodeDeployEcsDeployAction(
-                    action_name="DeployJobs",
+                    action_name="OutlierJobDeployment",
                     deployment_group=self.jobs_deployment_group,
-                    app_spec_template_file=jobs_build_output.at_path("appspec_job_nightly.yaml"),
-                    task_definition_template_file=jobs_build_output.at_path("taskdef_job_nightly.json"),
+                    app_spec_template_file=build_output.at_path("appspec_job_nightly.yaml"),
+                    task_definition_template_file=build_output.at_path("taskdef_job_nightly.json"),
                     container_image_inputs=[
                         codepipeline_actions.CodeDeployEcsContainerImageInput(
-                            input=jobs_build_output,
+                            input=build_output,
                             task_definition_placeholder="IMAGE1_NAME"
                         )
                     ]
