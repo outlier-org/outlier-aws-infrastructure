@@ -99,7 +99,7 @@ class EcsBlueGreenStack(cdk.Stack):
             self,
             "ApiDnsRecord",
             zone=hosted_zone,
-            record_name="api2",  # This will create api2.nightly.savvasoutlier.com
+            record_name="api",  # This will create api2.nightly.savvasoutlier.com
             target=route53.RecordTarget.from_alias(
                 route53_targets.LoadBalancerTarget(self.alb)
             )
