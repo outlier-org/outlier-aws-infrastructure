@@ -139,16 +139,35 @@ class EcsBlueGreenStack(cdk.Stack):
             )
         )
 
-        task_definition = ecs.FargateTaskDefinition.from_task_definition_arn(
-            self, "ExistingTaskDef",
-            f"arn:aws:ecs:{self.region}:{self.account}:task-definition/Outlier-Service-Task-nightly:32"
+        # Create task definition with correct resources
+        task_definition = ecs.FargateTaskDefinition(
+            self, "BlueGreenTaskDef",
+            execution_role=task_execution_role,
+            task_role=task_execution_role,
+            cpu=2048,  # 2 vCPU
+            memory_limit_mib=4096  # 4GB
+        )
+
+        # Add container with minimal config (CodeDeploy will update this)
+        app_container = task_definition.add_container(
+            "Outlier-Service-Container-nightly",
+            image=ecs.ContainerImage.from_ecr_repository(
+                ecr.Repository.from_repository_name(
+                    self, "OutlierEcrRepo", "outlier-ecr"
+                ),
+                tag="latest"
+            ),
+        )
+
+        app_container.add_port_mappings(
+            ecs.PortMapping(container_port=1337)
         )
 
         self.service = ecs.FargateService(
             self, "BlueGreenService",
             cluster=self.cluster,
             task_definition=task_definition,
-            desired_count=1,
+            desired_count=0,
             security_groups=[self.service_security_group],
             vpc_subnets=ec2.SubnetSelection(
                 subnet_type=ec2.SubnetType.PRIVATE_WITH_EGRESS
