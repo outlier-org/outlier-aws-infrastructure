@@ -139,31 +139,9 @@ class EcsBlueGreenStack(cdk.Stack):
             )
         )
 
-
-        # Placeholder Task Definition (structure only)
-        task_definition = ecs.FargateTaskDefinition(
-            self, "BlueGreenTaskDef",
-            execution_role=task_execution_role,
-            task_role=task_execution_role
-        )
-
-        # Use an existing ECR image in the placeholder Task Definition
-        app_container = task_definition.add_container(
-            "Outlier-Service-Container-nightly",
-            image=ecs.ContainerImage.from_ecr_repository(
-                ecr.Repository.from_repository_name(
-                    self, "OutlierEcrRepo", "outlier-ecr"
-                ),
-                tag="latest"  # Matches the latest pushed image in ECR
-            ),
-            memory_limit_mib=512,
-            cpu=256
-        )
-
-
-        # Add required port mapping for ECS
-        app_container.add_port_mappings(
-            ecs.PortMapping(container_port=1337)  # Matches Target Group port
+        task_definition = ecs.FargateTaskDefinition.from_task_definition_arn(
+            self, "ExistingTaskDef",
+            f"arn:aws:ecs:{self.region}:{self.account}:task-definition/Outlier-Service-Task-nightly:32"
         )
 
         self.service = ecs.FargateService(
