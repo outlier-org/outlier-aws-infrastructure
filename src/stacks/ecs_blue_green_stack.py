@@ -138,6 +138,32 @@ class EcsBlueGreenStack(cdk.Stack):
             )
         )
 
+        # Target Groups for Jobs Service
+        self.jobs_blue_target_group = elbv2.ApplicationTargetGroup(
+            self, "JobsBlueTargetGroup",
+            vpc=self.vpc,
+            port=1337,
+            protocol=elbv2.ApplicationProtocol.HTTP,
+            target_type=elbv2.TargetType.IP,
+            health_check=elbv2.HealthCheck(
+                path="/health",
+                interval=Duration.seconds(30),
+                timeout=Duration.seconds(5)
+            )
+        )
+        self.jobs_green_target_group = elbv2.ApplicationTargetGroup(
+            self, "JobsGreenTargetGroup",
+            vpc=self.vpc,
+            port=1337,
+            protocol=elbv2.ApplicationProtocol.HTTP,
+            target_type=elbv2.TargetType.IP,
+            health_check=elbv2.HealthCheck(
+                path="/health",
+                interval=Duration.seconds(30),
+                timeout=Duration.seconds(5)
+            )
+        )
+
         # HTTPS Listener
         self.https_listener = self.alb.add_listener(
             "HttpsListener",
@@ -164,32 +190,6 @@ class EcsBlueGreenStack(cdk.Stack):
                 port="443",
                 protocol="HTTPS",
                 permanent=True
-            )
-        )
-
-        # Target Groups for Jobs Service
-        self.jobs_blue_target_group = elbv2.ApplicationTargetGroup(
-            self, "JobsBlueTargetGroup",
-            vpc=self.vpc,
-            port=1337,
-            protocol=elbv2.ApplicationProtocol.HTTP,
-            target_type=elbv2.TargetType.IP,
-            health_check=elbv2.HealthCheck(
-                path="/health",
-                interval=Duration.seconds(30),
-                timeout=Duration.seconds(5)
-            )
-        )
-        self.jobs_green_target_group = elbv2.ApplicationTargetGroup(
-            self, "JobsGreenTargetGroup",
-            vpc=self.vpc,
-            port=1337,
-            protocol=elbv2.ApplicationProtocol.HTTP,
-            target_type=elbv2.TargetType.IP,
-            health_check=elbv2.HealthCheck(
-                path="/health",
-                interval=Duration.seconds(30),
-                timeout=Duration.seconds(5)
             )
         )
 
