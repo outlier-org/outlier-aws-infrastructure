@@ -26,6 +26,14 @@ class EcsBlueGreenStack(cdk.Stack):
             vpc_id="vpc-00059e30c80aa84f2"
         )
 
+        ecs_logs = logs.LogGroup(
+            self,
+            "EcsLogGroup",
+            log_group_name="/ecs/Outlier-Service-nightly",
+            retention=logs.RetentionDays.ONE_MONTH,
+            removal_policy=cdk.RemovalPolicy.DESTROY
+        )
+
         # Security Groups
         self.alb_security_group = ec2.SecurityGroup(
             self, "AlbSecurityGroup-BlueGreen",
