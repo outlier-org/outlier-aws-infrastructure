@@ -181,7 +181,7 @@ class EcsBlueGreenStack(cdk.Stack):
         self.ecr_repository = ecr.Repository(
             self,
             "OutlierEcrRepo-Nightly",
-            repository_name="outlier-ecr-nightly",
+            repository_name="outlier-ecr-nightly-2",
             lifecycle_rules=[
                 ecr.LifecycleRule(
                     description="Delete when imageCountMoreThan (10)",
@@ -190,6 +190,7 @@ class EcsBlueGreenStack(cdk.Stack):
                     tag_status=ecr.TagStatus.ANY
                 )
             ],
+            removal_policy=cdk.RemovalPolicy.DESTROY
         )
 
         # Log Group for Main Service
