@@ -7,6 +7,7 @@ from custom_constructs.iam_construct import IamConstruct
 from custom_constructs.alb_construct import AlbConstruct
 from custom_constructs.database_construct import DatabaseConstruct
 from custom_constructs.ecs_construct import EcsConstruct
+from custom_constructs.waf_construct import WafConstruct
 
 class BaseStack(cdk.Stack):
     def __init__(self, scope: Construct, id: str, **kwargs) -> None:
@@ -27,6 +28,13 @@ class BaseStack(cdk.Stack):
             "AlbConstruct",
             vpc=network.vpc,
             security_group=network.alb_security_group
+        )
+
+        # Create and associate WAF
+        waf = WafConstruct(
+            self,
+            "WafConstruct",
+            alb=alb.alb
         )
 
         # Add the database construct - using the existing RDS security group
