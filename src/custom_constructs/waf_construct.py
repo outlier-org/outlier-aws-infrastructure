@@ -15,7 +15,6 @@ class WafConstruct(BaseConstruct):
     ):
         super().__init__(scope, id)
 
-        # Create basic WAF first
         self._web_acl = wafv2.CfnWebACL(
             self,
             "OutlierApiWaf",
@@ -31,12 +30,13 @@ class WafConstruct(BaseConstruct):
                 sampled_requests_enabled=True
             ),
             rules=[
-                # Start with just one rule to test
-                self._create_common_rule_set()
+                self._create_rule("AWS-AWSManagedRulesCommonRuleSet", 0),
+                self._create_rule("AWS-AWSManagedRulesKnownBadInputsRuleSet", 1),
+                self._create_rule("AWS-AWSManagedRulesSQLiRuleSet", 2),
+                self._create_rule("AWS-AWSManagedRulesAmazonIpReputationList", 3)
             ]
         )
 
-        # Associate with ALB
         self._association = wafv2.CfnWebACLAssociation(
             self,
             "WafAlbAssociation",
@@ -44,22 +44,22 @@ class WafConstruct(BaseConstruct):
             web_acl_arn=self._web_acl.attr_arn
         )
 
-    def _create_common_rule_set(self) -> wafv2.CfnWebACL.RuleProperty:
+    def _create_rule(self, name: str, priority: int) -> wafv2.CfnWebACL.RuleProperty:
         return wafv2.CfnWebACL.RuleProperty(
-            name="AWS-AWSManagedRulesCommonRuleSet",
-            priority=0,
+            name=name,
+            priority=priority,
             override_action=wafv2.CfnWebACL.OverrideActionProperty(
                 count={}
             ),
             statement=wafv2.CfnWebACL.StatementProperty(
                 managed_rule_group_statement=wafv2.CfnWebACL.ManagedRuleGroupStatementProperty(
                     vendor_name="AWS",
-                    name="AWSManagedRulesCommonRuleSet"
+                    name=name
                 )
             ),
             visibility_config=wafv2.CfnWebACL.VisibilityConfigProperty(
                 cloud_watch_metrics_enabled=True,
-                metric_name="AWS-AWSManagedRulesCommonRuleSet",
+                metric_name=name,
                 sampled_requests_enabled=True
             )
         )
