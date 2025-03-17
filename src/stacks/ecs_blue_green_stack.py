@@ -335,7 +335,7 @@ class EcsBlueGreenStack(cdk.Stack):
             ),
             environment_variables={
                 "REPOSITORY_URI": codebuild.BuildEnvironmentVariable(
-                    value=f"{self.account}.dkr.ecr.{self.region}.amazonaws.com/outlier-ecr-nightly"
+                    value=f"{self.account}.dkr.ecr.{self.region}.amazonaws.com/outlier-ecr-nightly-2"
                 ),
                 "SERVICE_NAME": codebuild.BuildEnvironmentVariable(
                     value="outlier-service-nightly"
@@ -371,7 +371,7 @@ class EcsBlueGreenStack(cdk.Stack):
             iam.ManagedPolicy.from_aws_managed_policy_name("SecretsManagerReadWrite")
         )
 
-        # CodePipeline
+        # CodePipeline (for Both Services)
         pipeline = codepipeline.Pipeline(
             self, "Pipeline",
             artifact_bucket=artifact_bucket,
@@ -384,7 +384,7 @@ class EcsBlueGreenStack(cdk.Stack):
             resources=["arn:aws:codeconnections:us-east-1:528757783796:connection/ddd91232-5089-40b4-bc84-7ba9e4d1c20f"]
         ))
 
-        # Source Stage
+        # Source Stage (for Both Services)
         source_output = codepipeline.Artifact()
         pipeline.add_stage(
             stage_name="Source",
@@ -400,7 +400,7 @@ class EcsBlueGreenStack(cdk.Stack):
             ]
         )
 
-        # Build Stage
+        # Build Stage (for Both Services)
         build_output = codepipeline.Artifact()
         pipeline.add_stage(
             stage_name="Build",
@@ -414,7 +414,7 @@ class EcsBlueGreenStack(cdk.Stack):
             ]
         )
 
-        # Deploy Stage for Main Service
+        # Deploy Stage (Each Service has its own Deployment Group)
         pipeline.add_stage(
             stage_name="Deploy",
             actions=[
