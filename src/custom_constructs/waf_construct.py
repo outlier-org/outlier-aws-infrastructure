@@ -17,15 +17,15 @@ class WafConstruct(BaseConstruct):
         self._web_acl = wafv2.CfnWebACL(
             self,
             "OutlierApiWaf",
-            name=f"outlier-api-alb-waf-{self.environment}",
-            description=f"WAF for outlier API ALB ({self.environment})",
+            name=f"outlier-api-waf-{self.environment}",  # Simplified name
+            description="WAF protection for Outlier API ALB",  # Simplified description
             scope='REGIONAL',
             default_action=wafv2.CfnWebACL.DefaultActionProperty(
                 allow={}
             ),
             visibility_config=wafv2.CfnWebACL.VisibilityConfigProperty(
                 cloud_watch_metrics_enabled=True,
-                metric_name=f"outlier-api-alb-waf-{self.environment}",
+                metric_name=f"outlier-api-waf-{self.environment}",
                 sampled_requests_enabled=True
             ),
             rules=[
@@ -49,7 +49,7 @@ class WafConstruct(BaseConstruct):
             name=name,
             priority=priority,
             override_action=wafv2.CfnWebACL.OverrideActionProperty(
-                count={}  # Start in count mode
+                count={}
             ),
             statement=wafv2.CfnWebACL.StatementProperty(
                 managed_rule_group_statement=wafv2.CfnWebACL.ManagedRuleGroupStatementProperty(
