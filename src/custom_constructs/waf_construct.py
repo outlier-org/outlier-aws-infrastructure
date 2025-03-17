@@ -42,6 +42,9 @@ class WafConstruct(BaseConstruct):
                 wafv2.CfnWebACL.RuleProperty(
                     name="CommonRuleSet",
                     priority=0,
+                    override_action=wafv2.CfnWebACL.OverrideActionProperty(
+                        block={}
+                    ),
                     statement=wafv2.CfnWebACL.StatementProperty(
                         managed_rule_group_statement=wafv2.CfnWebACL.ManagedRuleGroupStatementProperty(
                             vendor_name="AWS",
@@ -57,6 +60,9 @@ class WafConstruct(BaseConstruct):
                 wafv2.CfnWebACL.RuleProperty(
                     name="KnownBadInputs",
                     priority=1,
+                    override_action=wafv2.CfnWebACL.OverrideActionProperty(
+                        block={}
+                    ),
                     statement=wafv2.CfnWebACL.StatementProperty(
                         managed_rule_group_statement=wafv2.CfnWebACL.ManagedRuleGroupStatementProperty(
                             vendor_name="AWS",
@@ -72,6 +78,9 @@ class WafConstruct(BaseConstruct):
                 wafv2.CfnWebACL.RuleProperty(
                     name="SQLiRules",
                     priority=2,
+                    override_action=wafv2.CfnWebACL.OverrideActionProperty(
+                        block={}
+                    ),
                     statement=wafv2.CfnWebACL.StatementProperty(
                         managed_rule_group_statement=wafv2.CfnWebACL.ManagedRuleGroupStatementProperty(
                             vendor_name="AWS",
@@ -87,6 +96,9 @@ class WafConstruct(BaseConstruct):
                 wafv2.CfnWebACL.RuleProperty(
                     name="IPReputationList",
                     priority=3,
+                    override_action=wafv2.CfnWebACL.OverrideActionProperty(
+                        block={}
+                    ),
                     statement=wafv2.CfnWebACL.StatementProperty(
                         managed_rule_group_statement=wafv2.CfnWebACL.ManagedRuleGroupStatementProperty(
                             vendor_name="AWS",
