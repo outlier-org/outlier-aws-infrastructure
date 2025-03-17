@@ -86,7 +86,7 @@ class EcsBlueGreenStack(cdk.Stack):
             load_balancer_name="outlier-blue-green"
         )
 
-        # Target Groups
+        # Target Groups for Main Service
         self.blue_target_group = elbv2.ApplicationTargetGroup(
             self, "BlueTargetGroup",
             vpc=self.vpc,
@@ -99,7 +99,6 @@ class EcsBlueGreenStack(cdk.Stack):
                 timeout=Duration.seconds(5)
             )
         )
-
         self.green_target_group = elbv2.ApplicationTargetGroup(
             self, "GreenTargetGroup",
             vpc=self.vpc,
@@ -113,7 +112,33 @@ class EcsBlueGreenStack(cdk.Stack):
             )
         )
 
-        # Listeners
+        # Target Groups for Jobs Service
+        self.jobs_blue_target_group = elbv2.ApplicationTargetGroup(
+            self, "JobsBlueTargetGroup",
+            vpc=self.vpc,
+            port=1337,
+            protocol=elbv2.ApplicationProtocol.HTTP,
+            target_type=elbv2.TargetType.IP,
+            health_check=elbv2.HealthCheck(
+                path="/health",
+                interval=Duration.seconds(30),
+                timeout=Duration.seconds(5)
+            )
+        )
+        self.jobs_green_target_group = elbv2.ApplicationTargetGroup(
+            self, "JobsGreenTargetGroup",
+            vpc=self.vpc,
+            port=1337,
+            protocol=elbv2.ApplicationProtocol.HTTP,
+            target_type=elbv2.TargetType.IP,
+            health_check=elbv2.HealthCheck(
+                path="/health",
+                interval=Duration.seconds(30),
+                timeout=Duration.seconds(5)
+            )
+        )
+
+        # Listener for Main Service (unchanged)
         self.prod_listener = self.alb.add_listener(
             "ProdListener", port=80,
             default_target_groups=[self.blue_target_group]
@@ -123,20 +148,26 @@ class EcsBlueGreenStack(cdk.Stack):
             default_target_groups=[self.green_target_group]
         )
 
-        # ECS Cluster
+        # Listener Rule for Jobs Service
+        self.prod_listener.add_action(
+            "JobsPathRule",
+            priority=10,
+            conditions=[elbv2.ListenerCondition.path_patterns(["/jobs/*"])],
+            action=elbv2.ListenerAction.forward([self.jobs_blue_target_group])
+        )
+
+        # ECS Cluster (unchanged)
         self.cluster = ecs.Cluster(
             self, "BlueGreenCluster",
             vpc=self.vpc,
             cluster_name="outlier-blue-green"
         )
 
-        # Task Execution Role
+        # Task Execution Role (unchanged)
         task_execution_role = iam.Role.from_role_arn(
             self, "TaskExecutionRole",
             f"arn:aws:iam::{self.account}:role/ecsTaskExecutionRole"
         )
-
-        # Attach an inline policy
         task_execution_role.attach_inline_policy(
             iam.Policy(
                 self, "TaskExecutionRolePolicy",
@@ -155,18 +186,16 @@ class EcsBlueGreenStack(cdk.Stack):
             )
         )
 
-        # Create task definition with correct resources
-        task_definition = ecs.FargateTaskDefinition(
-            self, "BlueGreenTaskDef",
+        # Main Service (unchanged)
+        main_task_definition = ecs.FargateTaskDefinition(
+            self, "MainTaskDef",
             execution_role=task_execution_role,
             task_role=task_execution_role,
             cpu=2048,  # 2 vCPU
             memory_limit_mib=4096  # 4GB
         )
-
-        # Add container with minimal config (CodeDeploy will update this)
-        app_container = task_definition.add_container(
-            "Outlier-Service-Container-nightly",
+        main_container = main_task_definition.add_container(
+            "Outlier-Main-Container-nightly",
             image=ecs.ContainerImage.from_ecr_repository(
                 ecr.Repository.from_repository_name(
                     self, "OutlierEcrRepo", "outlier-ecr"
@@ -174,16 +203,12 @@ class EcsBlueGreenStack(cdk.Stack):
                 tag="latest"
             ),
         )
-
-        app_container.add_port_mappings(
-            ecs.PortMapping(container_port=1337)
-        )
-
-        self.service = ecs.FargateService(
-            self, "BlueGreenService",
+        main_container.add_port_mappings(ecs.PortMapping(container_port=1337))
+        self.main_service = ecs.FargateService(
+            self, "MainService",
             cluster=self.cluster,
-            task_definition=task_definition,
-            desired_count=1,
+            task_definition=main_task_definition,
+            desired_count=0,
             security_groups=[self.service_security_group],
             vpc_subnets=ec2.SubnetSelection(
                 subnet_type=ec2.SubnetType.PRIVATE_WITH_EGRESS
@@ -192,26 +217,75 @@ class EcsBlueGreenStack(cdk.Stack):
                 type=ecs.DeploymentControllerType.CODE_DEPLOY
             )
         )
+        self.main_service.attach_to_application_target_group(self.blue_target_group)
 
-        # Attach the service to the ALB Target Group
-        self.service.attach_to_application_target_group(self.blue_target_group)
-
-        # CodeDeploy Setup
-        codedeploy_app = codedeploy.EcsApplication(
-            self, "CodeDeployApp",
-            application_name="outlier-blue-green"
+        # Jobs Service
+        jobs_task_definition = ecs.FargateTaskDefinition(
+            self, "JobsTaskDef",
+            execution_role=task_execution_role,
+            task_role=task_execution_role,
+            cpu=2048,  # 2 vCPU
+            memory_limit_mib=4096  # 4GB
         )
+        jobs_container = jobs_task_definition.add_container(
+            "Outlier-Jobs-Container-nightly",
+            image=ecs.ContainerImage.from_ecr_repository(
+                ecr.Repository.from_repository_name(
+                    self, "OutlierEcrRepo", "outlier-ecr"
+                ),
+                tag="latest"
+            ),
+        )
+        jobs_container.add_port_mappings(ecs.PortMapping(container_port=1337))
+        self.jobs_service = ecs.FargateService(
+            self, "JobsService",
+            cluster=self.cluster,
+            task_definition=jobs_task_definition,
+            desired_count=0,  # Start with 0 tasks
+            security_groups=[self.service_security_group],
+            vpc_subnets=ec2.SubnetSelection(
+                subnet_type=ec2.SubnetType.PRIVATE_WITH_EGRESS
+            ),
+            deployment_controller=ecs.DeploymentController(
+                type=ecs.DeploymentControllerType.CODE_DEPLOY
+            )
+        )
+        self.jobs_service.attach_to_application_target_group(self.jobs_blue_target_group)
 
-        self.deployment_group = codedeploy.EcsDeploymentGroup(
-            self, "CodeDeployGroup",
-            application=codedeploy_app,
-            service=self.service,
-            deployment_group_name="outlier-blue-green",
+        # CodeDeploy for Main Service (unchanged)
+        main_codedeploy_app = codedeploy.EcsApplication(
+            self, "MainCodeDeployApp",
+            application_name="outlier-main-service-nightly"
+        )
+        self.main_deployment_group = codedeploy.EcsDeploymentGroup(
+            self, "MainCodeDeployGroup",
+            application=main_codedeploy_app,
+            service=self.main_service,
+            deployment_group_name="outlier-main-service-nightly",
             blue_green_deployment_config=codedeploy.EcsBlueGreenDeploymentConfig(
                 listener=self.prod_listener,
                 test_listener=self.test_listener,
                 blue_target_group=self.blue_target_group,
                 green_target_group=self.green_target_group,
+                termination_wait_time=Duration.minutes(1)
+            )
+        )
+
+        # CodeDeploy for Jobs Service
+        jobs_codedeploy_app = codedeploy.EcsApplication(
+            self, "JobsCodeDeployApp",
+            application_name="outlier-jobs-service-nightly"
+        )
+        self.jobs_deployment_group = codedeploy.EcsDeploymentGroup(
+            self, "JobsCodeDeployGroup",
+            application=jobs_codedeploy_app,
+            service=self.jobs_service,
+            deployment_group_name="outlier-jobs-service-nightly",
+            blue_green_deployment_config=codedeploy.EcsBlueGreenDeploymentConfig(
+                listener=self.prod_listener,
+                test_listener=self.test_listener,
+                blue_target_group=self.jobs_blue_target_group,
+                green_target_group=self.jobs_green_target_group,
                 termination_wait_time=Duration.minutes(1)
             )
         )
@@ -223,8 +297,9 @@ class EcsBlueGreenStack(cdk.Stack):
             auto_delete_objects=True
         )
 
-        build_project = codebuild.PipelineProject(
-            self, "BuildProject",
+        # CodeBuild Project for Main Service
+        main_build_project = codebuild.PipelineProject(
+            self, "MainBuildProject",
             environment=codebuild.BuildEnvironment(
                 build_image=codebuild.LinuxBuildImage.STANDARD_7_0,
                 privileged=True
@@ -234,7 +309,7 @@ class EcsBlueGreenStack(cdk.Stack):
                     value=f"{self.account}.dkr.ecr.{self.region}.amazonaws.com/outlier-ecr"
                 ),
                 "SERVICE_NAME": codebuild.BuildEnvironmentVariable(
-                    value="outlier-service-nightly"
+                    value="outlier-main-service-nightly"
                 ),
                 "ENVIRONMENT": codebuild.BuildEnvironmentVariable(
                     value=self.environment.upper()
@@ -242,11 +317,10 @@ class EcsBlueGreenStack(cdk.Stack):
             },
             build_spec=codebuild.BuildSpec.from_source_filename("buildspec_nightly.yml")
         )
-        build_project.role.add_managed_policy(
+        main_build_project.role.add_managed_policy(
             iam.ManagedPolicy.from_aws_managed_policy_name("AmazonEC2ContainerRegistryPowerUser")
         )
-        # Add Custom ECR permissions
-        build_project.role.add_to_policy(iam.PolicyStatement(
+        main_build_project.role.add_to_policy(iam.PolicyStatement(
             actions=[
                 "ecr:GetAuthorizationToken",
                 "ecr:BatchCheckLayerAvailability",
@@ -264,10 +338,56 @@ class EcsBlueGreenStack(cdk.Stack):
             ],
             resources=["*"]
         ))
-        build_project.role.add_managed_policy(
+        main_build_project.role.add_managed_policy(
             iam.ManagedPolicy.from_aws_managed_policy_name("SecretsManagerReadWrite")
         )
 
+        # CodeBuild Project for Jobs Service
+        jobs_build_project = codebuild.PipelineProject(
+            self, "JobsBuildProject",
+            environment=codebuild.BuildEnvironment(
+                build_image=codebuild.LinuxBuildImage.STANDARD_7_0,
+                privileged=True
+            ),
+            environment_variables={
+                "REPOSITORY_URI": codebuild.BuildEnvironmentVariable(
+                    value=f"{self.account}.dkr.ecr.{self.region}.amazonaws.com/outlier-ecr"
+                ),
+                "SERVICE_NAME": codebuild.BuildEnvironmentVariable(
+                    value="outlier-jobs-service-nightly"
+                ),
+                "ENVIRONMENT": codebuild.BuildEnvironmentVariable(
+                    value=self.environment.upper()
+                )
+            },
+            build_spec=codebuild.BuildSpec.from_source_filename("buildspec_nightly.yml")
+        )
+        jobs_build_project.role.add_managed_policy(
+            iam.ManagedPolicy.from_aws_managed_policy_name("AmazonEC2ContainerRegistryPowerUser")
+        )
+        jobs_build_project.role.add_to_policy(iam.PolicyStatement(
+            actions=[
+                "ecr:GetAuthorizationToken",
+                "ecr:BatchCheckLayerAvailability",
+                "ecr:GetDownloadUrlForLayer",
+                "ecr:GetRepositoryPolicy",
+                "ecr:ListImages",
+                "ecr:DescribeRepositories",
+                "ecr:ListTagsForResource",
+                "ecr:DescribeImages",
+                "ecr:BatchGetImage",
+                "ecr:InitiateLayerUpload",
+                "ecr:UploadLayerPart",
+                "ecr:CompleteLayerUpload",
+                "ecr:PutImage"
+            ],
+            resources=["*"]
+        ))
+        jobs_build_project.role.add_managed_policy(
+            iam.ManagedPolicy.from_aws_managed_policy_name("SecretsManagerReadWrite")
+        )
+
+        # CodePipeline
         pipeline = codepipeline.Pipeline(
             self, "Pipeline",
             artifact_bucket=artifact_bucket,
@@ -280,10 +400,8 @@ class EcsBlueGreenStack(cdk.Stack):
             resources=["arn:aws:codeconnections:us-east-1:528757783796:connection/ddd91232-5089-40b4-bc84-7ba9e4d1c20f"]
         ))
 
+        # Source Stage (unchanged)
         source_output = codepipeline.Artifact()
-        build_output = codepipeline.Artifact()
-
-        # Pipeline Stages
         pipeline.add_stage(
             stage_name="Source",
             actions=[
@@ -298,29 +416,65 @@ class EcsBlueGreenStack(cdk.Stack):
             ]
         )
 
+        # Build Stage for Main Service
+        main_build_output = codepipeline.Artifact()
         pipeline.add_stage(
-            stage_name="Build",
+            stage_name="BuildMain",
             actions=[
                 codepipeline_actions.CodeBuildAction(
-                    action_name="Build",
-                    project=build_project,
+                    action_name="BuildMain",
+                    project=main_build_project,
                     input=source_output,
-                    outputs=[build_output]
+                    outputs=[main_build_output]
                 )
             ]
         )
 
+        # Build Stage for Jobs Service
+        jobs_build_output = codepipeline.Artifact()
         pipeline.add_stage(
-            stage_name="Deploy",
+            stage_name="BuildJobs",
+            actions=[
+                codepipeline_actions.CodeBuildAction(
+                    action_name="BuildJobs",
+                    project=jobs_build_project,
+                    input=source_output,
+                    outputs=[jobs_build_output]
+                )
+            ]
+        )
+
+        # Deploy Stage for Main Service
+        pipeline.add_stage(
+            stage_name="DeployMain",
             actions=[
                 codepipeline_actions.CodeDeployEcsDeployAction(
-                    action_name="Deploy",
-                    deployment_group=self.deployment_group,
-                    app_spec_template_file=build_output.at_path("appspec_nightly.yaml"),
-                    task_definition_template_file=build_output.at_path("taskdef_nightly.json"),
+                    action_name="DeployMain",
+                    deployment_group=self.main_deployment_group,
+                    app_spec_template_file=main_build_output.at_path("appspec_nightly.yaml"),
+                    task_definition_template_file=main_build_output.at_path("taskdef_nightly.json"),
                     container_image_inputs=[
                         codepipeline_actions.CodeDeployEcsContainerImageInput(
-                            input=build_output,
+                            input=main_build_output,
+                            task_definition_placeholder="IMAGE1_NAME"
+                        )
+                    ]
+                )
+            ]
+        )
+
+        # Deploy Stage for Jobs Service
+        pipeline.add_stage(
+            stage_name="DeployJobs",
+            actions=[
+                codepipeline_actions.CodeDeployEcsDeployAction(
+                    action_name="DeployJobs",
+                    deployment_group=self.jobs_deployment_group,
+                    app_spec_template_file=jobs_build_output.at_path("appspec_job_nightly.yaml"),
+                    task_definition_template_file=jobs_build_output.at_path("taskdef_job_nightly.json"),
+                    container_image_inputs=[
+                        codepipeline_actions.CodeDeployEcsContainerImageInput(
+                            input=jobs_build_output,
                             task_definition_placeholder="IMAGE1_NAME"
                         )
                     ]
