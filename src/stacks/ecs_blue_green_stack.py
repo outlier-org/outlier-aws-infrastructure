@@ -274,7 +274,6 @@ class EcsBlueGreenStack(cdk.Stack):
                     branch="staging",
                     connection_arn="arn:aws:codeconnections:us-east-1:528757783796:connection/ddd91232-5089-40b4-bc84-7ba9e4d1c20f",
                     output=source_output,
-                    output_artifact_format=codepipeline_actions.CodeStarSourceArtifactFormat.CODEBUILD_CLONE_REF,
                     detect_changes=True
                 )
             ]
