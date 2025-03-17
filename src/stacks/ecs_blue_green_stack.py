@@ -112,6 +112,32 @@ class EcsBlueGreenStack(cdk.Stack):
             "arn:aws:acm:us-east-1:528757783796:certificate/71eac7f3-f4f4-4a6c-a32b-d6dad41f94e8"  # Replace with your certificate ARN
         )
 
+        # Target Groups for Main Service
+        self.blue_target_group = elbv2.ApplicationTargetGroup(
+            self, "BlueTargetGroup",
+            vpc=self.vpc,
+            port=1337,
+            protocol=elbv2.ApplicationProtocol.HTTP,
+            target_type=elbv2.TargetType.IP,
+            health_check=elbv2.HealthCheck(
+                path="/health",
+                interval=Duration.seconds(30),
+                timeout=Duration.seconds(5)
+            )
+        )
+        self.green_target_group = elbv2.ApplicationTargetGroup(
+            self, "GreenTargetGroup",
+            vpc=self.vpc,
+            port=1337,
+            protocol=elbv2.ApplicationProtocol.HTTP,
+            target_type=elbv2.TargetType.IP,
+            health_check=elbv2.HealthCheck(
+                path="/health",
+                interval=Duration.seconds(30),
+                timeout=Duration.seconds(5)
+            )
+        )
+
         # HTTPS Listener
         self.https_listener = self.alb.add_listener(
             "HttpsListener",
@@ -138,32 +164,6 @@ class EcsBlueGreenStack(cdk.Stack):
                 port="443",
                 protocol="HTTPS",
                 permanent=True
-            )
-        )
-
-        # Target Groups for Main Service
-        self.blue_target_group = elbv2.ApplicationTargetGroup(
-            self, "BlueTargetGroup",
-            vpc=self.vpc,
-            port=1337,
-            protocol=elbv2.ApplicationProtocol.HTTP,
-            target_type=elbv2.TargetType.IP,
-            health_check=elbv2.HealthCheck(
-                path="/health",
-                interval=Duration.seconds(30),
-                timeout=Duration.seconds(5)
-            )
-        )
-        self.green_target_group = elbv2.ApplicationTargetGroup(
-            self, "GreenTargetGroup",
-            vpc=self.vpc,
-            port=1337,
-            protocol=elbv2.ApplicationProtocol.HTTP,
-            target_type=elbv2.TargetType.IP,
-            health_check=elbv2.HealthCheck(
-                path="/health",
-                interval=Duration.seconds(30),
-                timeout=Duration.seconds(5)
             )
         )
 
