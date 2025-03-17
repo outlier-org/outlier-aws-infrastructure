@@ -162,7 +162,7 @@ class EcsBlueGreenStack(cdk.Stack):
             self, "BlueGreenService",
             cluster=self.cluster,
             task_definition=task_definition,
-            desired_count=0,
+            desired_count=1,
             security_groups=[self.service_security_group],
             vpc_subnets=ec2.SubnetSelection(
                 subnet_type=ec2.SubnetType.PRIVATE_WITH_EGRESS
@@ -192,7 +192,7 @@ class EcsBlueGreenStack(cdk.Stack):
                 test_listener=self.test_listener,
                 blue_target_group=self.blue_target_group,
                 green_target_group=self.green_target_group,
-                termination_wait_time=Duration.minutes(5)
+                termination_wait_time=Duration.seconds(15)
             )
         )
 
