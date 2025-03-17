@@ -279,7 +279,7 @@ class EcsBlueGreenStack(cdk.Stack):
             self, "MainService",
             cluster=self.cluster,
             task_definition=main_task_definition,
-            desired_count=0,
+            desired_count=1,
             security_groups=[self.service_security_group],
             vpc_subnets=ec2.SubnetSelection(
                 subnet_type=ec2.SubnetType.PRIVATE_WITH_EGRESS
@@ -314,7 +314,7 @@ class EcsBlueGreenStack(cdk.Stack):
             self, "JobsService",
             cluster=self.cluster,
             task_definition=jobs_task_definition,
-            desired_count=0,
+            desired_count=1,
             security_groups=[self.service_security_group],
             vpc_subnets=ec2.SubnetSelection(
                 subnet_type=ec2.SubnetType.PRIVATE_WITH_EGRESS
