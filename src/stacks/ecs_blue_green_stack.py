@@ -219,7 +219,7 @@ class EcsBlueGreenStack(cdk.Stack):
             memory_limit_mib=4096  # 4GB
         )
         main_container = main_task_definition.add_container(
-            "Outlier-Main-Container-nightly",
+            "Outlier-Service-Container-nightly",
             image=ecs.ContainerImage.from_ecr_repository(
                 self.ecr_repository,
                 tag="latest"
@@ -254,7 +254,7 @@ class EcsBlueGreenStack(cdk.Stack):
             memory_limit_mib=4096  # 4GB
         )
         jobs_container = jobs_task_definition.add_container(
-            "Outlier-Jobs-Container-nightly",
+            "Outlier-Job-Container-nightly",
             image=ecs.ContainerImage.from_ecr_repository(
                 self.ecr_repository,  # Use the newly created ECR repository
                 tag="latest"
