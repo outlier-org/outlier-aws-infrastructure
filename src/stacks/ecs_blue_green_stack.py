@@ -243,14 +243,14 @@ class EcsBlueGreenStack(cdk.Stack):
         main_log_group = logs.LogGroup(
             self,
             "MainEcsLogGroup",
-            log_group_name="/ecs/Outlier-Main-Service-nightly",
+            log_group_name="/ecs/Outlier-Service-nightly",
             retention=logs.RetentionDays.ONE_MONTH,
             removal_policy=cdk.RemovalPolicy.DESTROY
         )
         jobs_log_group = logs.LogGroup(
             self,
             "JobsEcsLogGroup",
-            log_group_name="/ecs/Outlier-Jobs-Service-nightly",
+            log_group_name="/ecs/Outlier-job-nightly",
             retention=logs.RetentionDays.ONE_MONTH,
             removal_policy=cdk.RemovalPolicy.DESTROY
         )
