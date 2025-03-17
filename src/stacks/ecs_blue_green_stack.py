@@ -13,6 +13,9 @@ from aws_cdk import (
     aws_logs as logs,
     aws_s3 as s3,
     Duration,
+    aws_route53 as route53,
+    aws_route53_targets as route53_targets,
+    aws_certificatemanager as acm,
 )
 
 class EcsBlueGreenStack(cdk.Stack):
@@ -40,6 +43,11 @@ class EcsBlueGreenStack(cdk.Stack):
             security_group_name=f"outlier-alb-bluegreen-{self.environment}-sg",
             description="Security group for Blue/Green ALB",
             allow_all_outbound=True
+        )
+        # Allow HTTPS traffic to the ALB
+        self.alb_security_group.add_ingress_rule(
+            ec2.Peer.any_ipv4(), ec2.Port.tcp(443),
+            "Allow HTTPS from anywhere"
         )
         self.alb_security_group.add_ingress_rule(
             ec2.Peer.any_ipv4(), ec2.Port.tcp(80),
@@ -76,6 +84,61 @@ class EcsBlueGreenStack(cdk.Stack):
             internet_facing=True,
             security_group=self.alb_security_group,
             load_balancer_name="outlier-blue-green"
+        )
+
+        # Import the existing hosted zone
+        hosted_zone = route53.HostedZone.from_hosted_zone_attributes(
+            self,
+            "ExistingHostedZone",
+            hosted_zone_id="Z05574991AFW5NGZ1X8DH",  # Replace with your hosted zone ID
+            zone_name="nightly.savvasoutlier.com"  # Replace with your domain name
+        )
+
+        # Create an A record pointing to the ALB
+        route53.ARecord(
+            self,
+            "ApiDnsRecord",
+            zone=hosted_zone,
+            record_name="api2",  # This will create api2.nightly.savvasoutlier.com
+            target=route53.RecordTarget.from_alias(
+                route53_targets.LoadBalancerTarget(self.alb)
+            )
+        )
+
+        # Import the SSL certificate
+        certificate = acm.Certificate.from_certificate_arn(
+            self,
+            "Certificate",
+            "arn:aws:acm:us-east-1:528757783796:certificate/71eac7f3-f4f4-4a6c-a32b-d6dad41f94e8"  # Replace with your certificate ARN
+        )
+
+        # HTTPS Listener
+        self.https_listener = self.alb.add_listener(
+            "HttpsListener",
+            port=443,
+            protocol=elbv2.ApplicationProtocol.HTTPS,
+            certificates=[certificate],
+            ssl_policy=elbv2.SslPolicy.RECOMMENDED,
+            default_target_groups=[self.blue_target_group]  # Default target group for the main service
+        )
+
+        # Add a rule for the jobs service
+        self.https_listener.add_action(
+            "JobsPathRule",
+            priority=10,
+            conditions=[elbv2.ListenerCondition.path_patterns(["/jobs/*"])],
+            action=elbv2.ListenerAction.forward([self.jobs_blue_target_group])
+        )
+
+        # HTTP Listener (redirects to HTTPS)
+        self.http_listener = self.alb.add_listener(
+            "HttpListener",
+            port=80,
+            default_action=elbv2.ListenerAction.redirect(
+                port="443",
+                protocol="HTTPS",
+                permanent=True
+            )
         )
 
         # Target Groups for Main Service
@@ -130,32 +193,14 @@ class EcsBlueGreenStack(cdk.Stack):
             )
         )
 
-        # Listener for Main Service (unchanged)
-        self.prod_listener = self.alb.add_listener(
-            "ProdListener", port=80,
-            default_target_groups=[self.blue_target_group]
-        )
-        self.test_listener = self.alb.add_listener(
-            "TestListener", port=8080,
-            default_target_groups=[self.green_target_group]
-        )
-
-        # Listener Rule for Jobs Service
-        self.prod_listener.add_action(
-            "JobsPathRule",
-            priority=10,
-            conditions=[elbv2.ListenerCondition.path_patterns(["/jobs/*"])],
-            action=elbv2.ListenerAction.forward([self.jobs_blue_target_group])
-        )
-
-        # ECS Cluster (unchanged)
+        # ECS Cluster
         self.cluster = ecs.Cluster(
             self, "BlueGreenCluster",
             vpc=self.vpc,
             cluster_name="outlier-blue-green"
         )
 
-        # Task Execution Role (unchanged)
+        # Task Execution Role
         task_execution_role = iam.Role.from_role_arn(
             self, "TaskExecutionRole",
             f"arn:aws:iam::{self.account}:role/ecsTaskExecutionRole"
@@ -178,6 +223,7 @@ class EcsBlueGreenStack(cdk.Stack):
             )
         )
 
+        # ECR Repository
         self.ecr_repository = ecr.Repository(
             self,
             "OutlierEcrRepo-Nightly",
@@ -193,7 +239,7 @@ class EcsBlueGreenStack(cdk.Stack):
             removal_policy=cdk.RemovalPolicy.DESTROY
         )
 
-        # Log Group for Main Service
+        # Log Groups
         main_log_group = logs.LogGroup(
             self,
             "MainEcsLogGroup",
@@ -201,8 +247,6 @@ class EcsBlueGreenStack(cdk.Stack):
             retention=logs.RetentionDays.ONE_MONTH,
             removal_policy=cdk.RemovalPolicy.DESTROY
         )
-
-        # Log Group for Jobs Service
         jobs_log_group = logs.LogGroup(
             self,
             "JobsEcsLogGroup",
@@ -257,7 +301,7 @@ class EcsBlueGreenStack(cdk.Stack):
         jobs_container = jobs_task_definition.add_container(
             "Outlier-Job-Container-nightly",
             image=ecs.ContainerImage.from_ecr_repository(
-                self.ecr_repository,  # Use the newly created ECR repository
+                self.ecr_repository,
                 tag="latest"
             ),
             logging=ecs.LogDriver.aws_logs(
@@ -270,7 +314,7 @@ class EcsBlueGreenStack(cdk.Stack):
             self, "JobsService",
             cluster=self.cluster,
             task_definition=jobs_task_definition,
-            desired_count=0,  # Start with 0 tasks
+            desired_count=0,
             security_groups=[self.service_security_group],
             vpc_subnets=ec2.SubnetSelection(
                 subnet_type=ec2.SubnetType.PRIVATE_WITH_EGRESS
@@ -281,7 +325,7 @@ class EcsBlueGreenStack(cdk.Stack):
         )
         self.jobs_service.attach_to_application_target_group(self.jobs_blue_target_group)
 
-        # CodeDeploy for Main Service (unchanged)
+        # CodeDeploy for Main Service
         main_codedeploy_app = codedeploy.EcsApplication(
             self, "MainCodeDeployApp",
             application_name="outlier-main-service-nightly"
@@ -292,7 +336,7 @@ class EcsBlueGreenStack(cdk.Stack):
             service=self.main_service,
             deployment_group_name="outlier-main-service-nightly",
             blue_green_deployment_config=codedeploy.EcsBlueGreenDeploymentConfig(
-                listener=self.prod_listener,
+                listener=self.https_listener,  # Use the HTTPS listener
                 test_listener=self.test_listener,
                 blue_target_group=self.blue_target_group,
                 green_target_group=self.green_target_group,
@@ -311,7 +355,7 @@ class EcsBlueGreenStack(cdk.Stack):
             service=self.jobs_service,
             deployment_group_name="outlier-jobs-service-nightly",
             blue_green_deployment_config=codedeploy.EcsBlueGreenDeploymentConfig(
-                listener=self.prod_listener,
+                listener=self.https_listener,  # Use the HTTPS listener
                 test_listener=self.test_listener,
                 blue_target_group=self.jobs_blue_target_group,
                 green_target_group=self.jobs_green_target_group,
@@ -414,7 +458,7 @@ class EcsBlueGreenStack(cdk.Stack):
             ]
         )
 
-        # Deploy Stage (Each Service has its own Deployment Group)
+        # Deploy Stage (for Both Services)
         pipeline.add_stage(
             stage_name="Deploy",
             actions=[
