@@ -1,4 +1,3 @@
-# src/custom_constructs/waf_construct.py
 from aws_cdk import (
     aws_wafv2 as wafv2,
     aws_elasticloadbalancingv2 as elbv2,
@@ -40,78 +39,78 @@ class WafConstruct(BaseConstruct):
                 sampled_requests_enabled=True
             ),
             rules=[
-                {
-                    "name": "CommonRuleSet",
-                    "priority": 0,
-                    "override_action": {
-                        "count": {}
-                    },
-                    "statement": {
-                        "managedRuleGroupStatement": {
-                            "vendorName": "AWS",
-                            "name": "AWSManagedRulesCommonRuleSet"
-                        }
-                    },
-                    "visibility_config": {
-                        "sampledRequestsEnabled": True,
-                        "cloudWatchMetricsEnabled": True,
-                        "metricName": "CommonRuleSetMetric"
-                    }
-                },
-                {
-                    "name": "KnownBadInputs",
-                    "priority": 1,
-                    "override_action": {
-                        "count": {}
-                    },
-                    "statement": {
-                        "managedRuleGroupStatement": {
-                            "vendorName": "AWS",
-                            "name": "AWSManagedRulesKnownBadInputsRuleSet"
-                        }
-                    },
-                    "visibility_config": {
-                        "sampledRequestsEnabled": True,
-                        "cloudWatchMetricsEnabled": True,
-                        "metricName": "KnownBadInputsMetric"
-                    }
-                },
-                {
-                    "name": "SQLiRules",
-                    "priority": 2,
-                    "override_action": {
-                        "count": {}
-                    },
-                    "statement": {
-                        "managedRuleGroupStatement": {
-                            "vendorName": "AWS",
-                            "name": "AWSManagedRulesSQLiRuleSet"
-                        }
-                    },
-                    "visibility_config": {
-                        "sampledRequestsEnabled": True,
-                        "cloudWatchMetricsEnabled": True,
-                        "metricName": "SQLiRulesMetric"
-                    }
-                },
-                {
-                    "name": "IPReputationList",
-                    "priority": 3,
-                    "override_action": {
-                        "count": {}
-                    },
-                    "statement": {
-                        "managedRuleGroupStatement": {
-                            "vendorName": "AWS",
-                            "name": "AWSManagedRulesAmazonIpReputationList"
-                        }
-                    },
-                    "visibility_config": {
-                        "sampledRequestsEnabled": True,
-                        "cloudWatchMetricsEnabled": True,
-                        "metricName": "IPReputationListMetric"
-                    }
-                }
+                wafv2.CfnWebACL.RuleProperty(
+                    name="CommonRuleSet",
+                    priority=0,
+                    override_action=wafv2.CfnWebACL.OverrideActionProperty(
+                        count={}
+                    ),
+                    statement=wafv2.CfnWebACL.StatementProperty(
+                        managed_rule_group_statement=wafv2.CfnWebACL.ManagedRuleGroupStatementProperty(
+                            vendor_name="AWS",
+                            name="AWSManagedRulesCommonRuleSet"
+                        )
+                    ),
+                    visibility_config=wafv2.CfnWebACL.VisibilityConfigProperty(
+                        sampled_requests_enabled=True,
+                        cloud_watch_metrics_enabled=True,
+                        metric_name="CommonRuleSetMetric"
+                    )
+                ),
+                wafv2.CfnWebACL.RuleProperty(
+                    name="KnownBadInputs",
+                    priority=1,
+                    override_action=wafv2.CfnWebACL.OverrideActionProperty(
+                        count={}
+                    ),
+                    statement=wafv2.CfnWebACL.StatementProperty(
+                        managed_rule_group_statement=wafv2.CfnWebACL.ManagedRuleGroupStatementProperty(
+                            vendor_name="AWS",
+                            name="AWSManagedRulesKnownBadInputsRuleSet"
+                        )
+                    ),
+                    visibility_config=wafv2.CfnWebACL.VisibilityConfigProperty(
+                        sampled_requests_enabled=True,
+                        cloud_watch_metrics_enabled=True,
+                        metric_name="KnownBadInputsMetric"
+                    )
+                ),
+                wafv2.CfnWebACL.RuleProperty(
+                    name="SQLiRules",
+                    priority=2,
+                    override_action=wafv2.CfnWebACL.OverrideActionProperty(
+                        count={}
+                    ),
+                    statement=wafv2.CfnWebACL.StatementProperty(
+                        managed_rule_group_statement=wafv2.CfnWebACL.ManagedRuleGroupStatementProperty(
+                            vendor_name="AWS",
+                            name="AWSManagedRulesSQLiRuleSet"
+                        )
+                    ),
+                    visibility_config=wafv2.CfnWebACL.VisibilityConfigProperty(
+                        sampled_requests_enabled=True,
+                        cloud_watch_metrics_enabled=True,
+                        metric_name="SQLiRulesMetric"
+                    )
+                ),
+                wafv2.CfnWebACL.RuleProperty(
+                    name="IPReputationList",
+                    priority=3,
+                    override_action=wafv2.CfnWebACL.OverrideActionProperty(
+                        count={}
+                    ),
+                    statement=wafv2.CfnWebACL.StatementProperty(
+                        managed_rule_group_statement=wafv2.CfnWebACL.ManagedRuleGroupStatementProperty(
+                            vendor_name="AWS",
+                            name="AWSManagedRulesAmazonIpReputationList"
+                        )
+                    ),
+                    visibility_config=wafv2.CfnWebACL.VisibilityConfigProperty(
+                        sampled_requests_enabled=True,
+                        cloud_watch_metrics_enabled=True,
+                        metric_name="IPReputationListMetric"
+                    )
+                )
             ]
         )
 
