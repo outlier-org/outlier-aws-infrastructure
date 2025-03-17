@@ -418,7 +418,7 @@ class EcsBlueGreenStack(cdk.Stack):
 
         # Pipeline Infrastructure
         artifact_bucket = s3.Bucket(
-            self, "ArtifactBucket",
+            self, "ArtifactBucket2",
             removal_policy=cdk.RemovalPolicy.DESTROY,
             auto_delete_objects=True
         )
