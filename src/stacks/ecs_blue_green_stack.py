@@ -1,4 +1,3 @@
-# src/stacks/ecs_blue_green_stack.py
 import aws_cdk as cdk
 from constructs import Construct
 from aws_cdk import (
@@ -26,6 +25,14 @@ class EcsBlueGreenStack(cdk.Stack):
             vpc_id="vpc-00059e30c80aa84f2"
         )
 
+        # Import existing RDS Security Group
+        self.rds_security_group = ec2.SecurityGroup.from_security_group_id(
+            self,
+            "ExistingRdsSecurityGroup",
+            "sg-05fcdaf33c1d2a016",
+            allow_all_outbound=True
+        )
+
         ecs_logs = logs.LogGroup(
             self,
             "EcsLogGroup",
@@ -38,6 +45,7 @@ class EcsBlueGreenStack(cdk.Stack):
         self.alb_security_group = ec2.SecurityGroup(
             self, "AlbSecurityGroup-BlueGreen",
             vpc=self.vpc,
+            security_group_name=f"outlier-alb-bluegreen-{self.environment}-sg",
             description="Security group for Blue/Green ALB",
             allow_all_outbound=True
         )
@@ -53,12 +61,20 @@ class EcsBlueGreenStack(cdk.Stack):
         self.service_security_group = ec2.SecurityGroup(
             self, "ServiceSecurityGroup-BlueGreen",
             vpc=self.vpc,
+            security_group_name=f"outlier-service-bluegreen-{self.environment}-sg",
             description="Security group for ECS Service",
             allow_all_outbound=True
         )
         self.service_security_group.add_ingress_rule(
             self.alb_security_group, ec2.Port.tcp(1337),
             "Allow from ALB"
+        )
+
+        # Add RDS ingress rule to allow access FROM our service security group
+        self.rds_security_group.add_ingress_rule(
+            peer=ec2.Peer.security_group_id(self.service_security_group.security_group_id),
+            connection=ec2.Port.tcp(5432),
+            description="Allow PostgreSQL from ECS service"
         )
 
         # Load Balancer
@@ -179,7 +195,6 @@ class EcsBlueGreenStack(cdk.Stack):
 
         # Attach the service to the ALB Target Group
         self.service.attach_to_application_target_group(self.blue_target_group)
-
 
         # CodeDeploy Setup
         codedeploy_app = codedeploy.EcsApplication(
