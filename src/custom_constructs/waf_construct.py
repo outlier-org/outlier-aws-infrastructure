@@ -43,7 +43,7 @@ class WafConstruct(BaseConstruct):
                     name="CommonRuleSet",
                     priority=0,
                     override_action=wafv2.CfnWebACL.OverrideActionProperty(
-                        block={}
+                        count={}
                     ),
                     statement=wafv2.CfnWebACL.StatementProperty(
                         managed_rule_group_statement=wafv2.CfnWebACL.ManagedRuleGroupStatementProperty(
@@ -61,7 +61,7 @@ class WafConstruct(BaseConstruct):
                     name="KnownBadInputs",
                     priority=1,
                     override_action=wafv2.CfnWebACL.OverrideActionProperty(
-                        block={}
+                        count={}
                     ),
                     statement=wafv2.CfnWebACL.StatementProperty(
                         managed_rule_group_statement=wafv2.CfnWebACL.ManagedRuleGroupStatementProperty(
@@ -79,7 +79,7 @@ class WafConstruct(BaseConstruct):
                     name="SQLiRules",
                     priority=2,
                     override_action=wafv2.CfnWebACL.OverrideActionProperty(
-                        block={}
+                        count={}
                     ),
                     statement=wafv2.CfnWebACL.StatementProperty(
                         managed_rule_group_statement=wafv2.CfnWebACL.ManagedRuleGroupStatementProperty(
@@ -97,7 +97,7 @@ class WafConstruct(BaseConstruct):
                     name="IPReputationList",
                     priority=3,
                     override_action=wafv2.CfnWebACL.OverrideActionProperty(
-                        block={}
+                        count={}
                     ),
                     statement=wafv2.CfnWebACL.StatementProperty(
                         managed_rule_group_statement=wafv2.CfnWebACL.ManagedRuleGroupStatementProperty(
