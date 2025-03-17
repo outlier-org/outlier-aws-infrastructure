@@ -33,14 +33,6 @@ class EcsBlueGreenStack(cdk.Stack):
             allow_all_outbound=True
         )
 
-        ecs_logs = logs.LogGroup(
-            self,
-            "EcsLogGroup",
-            log_group_name="/ecs/Outlier-Service-nightly",
-            retention=logs.RetentionDays.ONE_MONTH,
-            removal_policy=cdk.RemovalPolicy.DESTROY
-        )
-
         # Security Groups
         self.alb_security_group = ec2.SecurityGroup(
             self, "AlbSecurityGroup-BlueGreen",
@@ -186,7 +178,39 @@ class EcsBlueGreenStack(cdk.Stack):
             )
         )
 
-        # Main Service (unchanged)
+        self.ecr_repository = ecr.Repository(
+            self,
+            "OutlierEcrRepo-Nightly",
+            repository_name="outlier-ecr-nightly",
+            lifecycle_rules=[
+                ecr.LifecycleRule(
+                    description="Delete when imageCountMoreThan (10)",
+                    max_image_count=10,
+                    rule_priority=1,
+                    tag_status=ecr.TagStatus.ANY
+                )
+            ],
+        )
+
+        # Log Group for Main Service
+        main_log_group = logs.LogGroup(
+            self,
+            "MainEcsLogGroup",
+            log_group_name="/ecs/Outlier-Main-Service-nightly",
+            retention=logs.RetentionDays.ONE_MONTH,
+            removal_policy=cdk.RemovalPolicy.DESTROY
+        )
+
+        # Log Group for Jobs Service
+        jobs_log_group = logs.LogGroup(
+            self,
+            "JobsEcsLogGroup",
+            log_group_name="/ecs/Outlier-Jobs-Service-nightly",
+            retention=logs.RetentionDays.ONE_MONTH,
+            removal_policy=cdk.RemovalPolicy.DESTROY
+        )
+
+        # Main Service Task Definition
         main_task_definition = ecs.FargateTaskDefinition(
             self, "MainTaskDef",
             execution_role=task_execution_role,
@@ -197,18 +221,20 @@ class EcsBlueGreenStack(cdk.Stack):
         main_container = main_task_definition.add_container(
             "Outlier-Main-Container-nightly",
             image=ecs.ContainerImage.from_ecr_repository(
-                ecr.Repository.from_repository_name(
-                    self, "OutlierEcrRepo", "outlier-ecr"
-                ),
+                self.ecr_repository,
                 tag="latest"
             ),
+            logging=ecs.LogDriver.aws_logs(
+                stream_prefix="ecs",
+                log_group=main_log_group
+            )
         )
         main_container.add_port_mappings(ecs.PortMapping(container_port=1337))
         self.main_service = ecs.FargateService(
             self, "MainService",
             cluster=self.cluster,
             task_definition=main_task_definition,
-            desired_count=0,
+            desired_count=1,
             security_groups=[self.service_security_group],
             vpc_subnets=ec2.SubnetSelection(
                 subnet_type=ec2.SubnetType.PRIVATE_WITH_EGRESS
@@ -219,7 +245,7 @@ class EcsBlueGreenStack(cdk.Stack):
         )
         self.main_service.attach_to_application_target_group(self.blue_target_group)
 
-        # Jobs Service
+        # Jobs Service Task Definition
         jobs_task_definition = ecs.FargateTaskDefinition(
             self, "JobsTaskDef",
             execution_role=task_execution_role,
@@ -230,11 +256,13 @@ class EcsBlueGreenStack(cdk.Stack):
         jobs_container = jobs_task_definition.add_container(
             "Outlier-Jobs-Container-nightly",
             image=ecs.ContainerImage.from_ecr_repository(
-                ecr.Repository.from_repository_name(
-                    self, "OutlierEcrRepo", "outlier-ecr"
-                ),
+                self.ecr_repository,  # Use the newly created ECR repository
                 tag="latest"
             ),
+            logging=ecs.LogDriver.aws_logs(
+                stream_prefix="ecs",
+                log_group=jobs_log_group
+            )
         )
         jobs_container.add_port_mappings(ecs.PortMapping(container_port=1337))
         self.jobs_service = ecs.FargateService(
@@ -306,7 +334,7 @@ class EcsBlueGreenStack(cdk.Stack):
             ),
             environment_variables={
                 "REPOSITORY_URI": codebuild.BuildEnvironmentVariable(
-                    value=f"{self.account}.dkr.ecr.{self.region}.amazonaws.com/outlier-ecr"
+                    value=f"{self.account}.dkr.ecr.{self.region}.amazonaws.com/outlier-ecr-nightly"
                 ),
                 "SERVICE_NAME": codebuild.BuildEnvironmentVariable(
                     value="outlier-main-service-nightly"
@@ -351,7 +379,7 @@ class EcsBlueGreenStack(cdk.Stack):
             ),
             environment_variables={
                 "REPOSITORY_URI": codebuild.BuildEnvironmentVariable(
-                    value=f"{self.account}.dkr.ecr.{self.region}.amazonaws.com/outlier-ecr"
+                    value=f"{self.account}.dkr.ecr.{self.region}.amazonaws.com/outlier-ecr-nightly"
                 ),
                 "SERVICE_NAME": codebuild.BuildEnvironmentVariable(
                     value="outlier-jobs-service-nightly"
