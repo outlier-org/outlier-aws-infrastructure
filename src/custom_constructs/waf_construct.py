@@ -15,53 +15,49 @@ class WafConstruct(BaseConstruct):
     ):
         super().__init__(scope, id)
 
+        # Create WAF using L1 construct (direct CloudFormation mapping)
         self._web_acl = wafv2.CfnWebACL(
             self,
             "OutlierApiWaf",
             name=f"outlier-api-waf-{self.environment}",
             description="WAF for Outlier API",
-            scope='REGIONAL',
-            default_action=wafv2.CfnWebACL.DefaultActionProperty(
-                allow={}
-            ),
-            visibility_config=wafv2.CfnWebACL.VisibilityConfigProperty(
-                cloud_watch_metrics_enabled=True,
-                metric_name=f"outlier-api-waf-{self.environment}",
-                sampled_requests_enabled=True
-            ),
+            scope="REGIONAL",
+            default_action={
+                "allow": {}
+            },
+            visibility_config={
+                "cloudWatchMetricsEnabled": True,
+                "metricName": f"outlier-api-waf-{self.environment}",
+                "sampledRequestsEnabled": True
+            },
             rules=[
-                self._create_rule("AWS-AWSManagedRulesCommonRuleSet", 0),
-                self._create_rule("AWS-AWSManagedRulesKnownBadInputsRuleSet", 1),
-                self._create_rule("AWS-AWSManagedRulesSQLiRuleSet", 2),
-                self._create_rule("AWS-AWSManagedRulesAmazonIpReputationList", 3)
+                {
+                    "name": "AWSManagedRulesCommonRuleSet",
+                    "priority": 0,
+                    "overrideAction": {
+                        "count": {}
+                    },
+                    "statement": {
+                        "managedRuleGroupStatement": {
+                            "vendorName": "AWS",
+                            "name": "AWSManagedRulesCommonRuleSet"
+                        }
+                    },
+                    "visibilityConfig": {
+                        "cloudWatchMetricsEnabled": True,
+                        "metricName": "AWSManagedRulesCommonRuleSetMetric",
+                        "sampledRequestsEnabled": True
+                    }
+                }
             ]
         )
 
+        # Create association
         self._association = wafv2.CfnWebACLAssociation(
             self,
             "WafAlbAssociation",
             resource_arn=alb.load_balancer_arn,
             web_acl_arn=self._web_acl.attr_arn
-        )
-
-    def _create_rule(self, name: str, priority: int) -> wafv2.CfnWebACL.RuleProperty:
-        return wafv2.CfnWebACL.RuleProperty(
-            name=name,
-            priority=priority,
-            override_action=wafv2.CfnWebACL.OverrideActionProperty(
-                count={}
-            ),
-            statement=wafv2.CfnWebACL.StatementProperty(
-                managed_rule_group_statement=wafv2.CfnWebACL.ManagedRuleGroupStatementProperty(
-                    vendor_name="AWS",
-                    name=name
-                )
-            ),
-            visibility_config=wafv2.CfnWebACL.VisibilityConfigProperty(
-                cloud_watch_metrics_enabled=True,
-                metric_name=name,
-                sampled_requests_enabled=True
-            )
         )
 
     @property
