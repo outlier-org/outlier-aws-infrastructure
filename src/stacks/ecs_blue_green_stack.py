@@ -337,7 +337,6 @@ class EcsBlueGreenStack(cdk.Stack):
             deployment_group_name="outlier-main-service-nightly",
             blue_green_deployment_config=codedeploy.EcsBlueGreenDeploymentConfig(
                 listener=self.https_listener,  # Use the HTTPS listener
-                test_listener=self.test_listener,
                 blue_target_group=self.blue_target_group,
                 green_target_group=self.green_target_group,
                 termination_wait_time=Duration.minutes(1)
@@ -356,7 +355,6 @@ class EcsBlueGreenStack(cdk.Stack):
             deployment_group_name="outlier-jobs-service-nightly",
             blue_green_deployment_config=codedeploy.EcsBlueGreenDeploymentConfig(
                 listener=self.https_listener,  # Use the HTTPS listener
-                test_listener=self.test_listener,
                 blue_target_group=self.jobs_blue_target_group,
                 green_target_group=self.jobs_green_target_group,
                 termination_wait_time=Duration.minutes(1)
