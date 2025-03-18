@@ -3,6 +3,7 @@ import os
 import aws_cdk as cdk
 from stacks.base_stack import BaseStack
 from stacks.ecs_blue_green_stack import EcsBlueGreenStack
+from stacks.dev_application_stack import DevApplicationStack
 from stacks.github_oidc_stack import GitHubOIDCStack
 
 # Inherit environment variables from npm run commands (displayed in .projen/tasks.json)
@@ -17,6 +18,8 @@ GitHubOIDCStack(app, f"GitHubOIDCStack-{environment}", env=aws_environment)
 
 # Create a base stack which contains all of our main resources
 BaseStack(app, f"BaseStack-{environment}", env=aws_environment)
+
+DevApplicationStack(app, f"BaseStack-{environment}", env=aws_environment)
 
 EcsBlueGreenStack(app, f"EcsBlueGreenStack-{environment}", env=aws_environment)
 
