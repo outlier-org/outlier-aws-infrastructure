@@ -337,7 +337,7 @@ class EcsBlueGreenStack(cdk.Stack):
                     action_name="GitHub",
                     owner="outlier-org",
                     repo="outlier-api",
-                    branch="nightly-taskdef-update",
+                    branch="staging",
                     connection_arn="arn:aws:codeconnections:us-east-1:528757783796:connection/ddd91232-5089-40b4-bc84-7ba9e4d1c20f",
                     output=source_output
                 )
