@@ -14,7 +14,7 @@ class EcsConstruct(Construct):
     def __init__(self, scope: Construct, id: str, vpc: ec2.IVpc,
                  security_group: ec2.ISecurityGroup, ecr_repository: ecr.IRepository,
                  blue_target_group: elbv2.IApplicationTargetGroup,
-                 account: str, region: str, environment: str, **kwargs) -> None:
+                 account: str, region: str, **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
 
         # ECS Log Group

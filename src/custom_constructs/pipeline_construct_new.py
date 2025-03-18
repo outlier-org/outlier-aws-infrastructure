@@ -19,7 +19,7 @@ class PipelineConstruct(Construct):
                  http_listener: elbv2.IApplicationListener,
                  blue_target_group: elbv2.IApplicationTargetGroup,
                  green_target_group: elbv2.IApplicationTargetGroup,
-                 account: str, region: str, environment: str, **kwargs) -> None:
+                 account: str, region: str, **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
 
         # CodeDeploy Setup
@@ -63,7 +63,7 @@ class PipelineConstruct(Construct):
                     value="outlier-service-nightly"
                 ),
                 "ENVIRONMENT": codebuild.BuildEnvironmentVariable(
-                    value=environment.upper()
+                    value=self.environment.upper()
                 )
             },
             build_spec=codebuild.BuildSpec.from_source_filename("buildspec_nightly.yml")

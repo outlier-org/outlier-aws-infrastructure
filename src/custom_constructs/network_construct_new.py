@@ -4,7 +4,7 @@ from aws_cdk import aws_ec2 as ec2
 
 
 class NetworkConstruct(Construct):
-    def __init__(self, scope: Construct, id: str, vpc_id: str, rds_sg_id: str, environment: str, **kwargs) -> None:
+    def __init__(self, scope: Construct, id: str, vpc_id: str, rds_sg_id: str, **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
 
         # Existing VPC
@@ -25,7 +25,7 @@ class NetworkConstruct(Construct):
         self.alb_security_group = ec2.SecurityGroup(
             self, "AlbSecurityGroup-BlueGreen",
             vpc=self.vpc,
-            security_group_name=f"outlier-alb-bluegreen-{environment}-sg",
+            security_group_name=f"outlier-alb-bluegreen-{self.environment}-sg",
             description="Security group for Blue/Green ALB",
             allow_all_outbound=True
         )
@@ -46,7 +46,7 @@ class NetworkConstruct(Construct):
         self.service_security_group = ec2.SecurityGroup(
             self, "ServiceSecurityGroup-BlueGreen",
             vpc=self.vpc,
-            security_group_name=f"outlier-service-bluegreen-{environment}-sg",
+            security_group_name=f"outlier-service-bluegreen-{self.environment}-sg",
             description="Security group for ECS Service",
             allow_all_outbound=True
         )
