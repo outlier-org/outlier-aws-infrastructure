@@ -286,12 +286,7 @@ class EcsBlueGreenStack(cdk.Stack):
             ),
             deployment_controller=ecs.DeploymentController(
                 type=ecs.DeploymentControllerType.CODE_DEPLOY
-            ),
-            load_balancers=[{
-                "container_name": "Outlier-Service-Container-nightly",
-                "container_port": 1337,
-                "target_group": self.blue_target_group  # Use the blue target group
-            }]
+            )
         )
         self.main_service.attach_to_application_target_group(self.blue_target_group)
 
@@ -326,12 +321,7 @@ class EcsBlueGreenStack(cdk.Stack):
             ),
             deployment_controller=ecs.DeploymentController(
                 type=ecs.DeploymentControllerType.CODE_DEPLOY
-            ),
-            load_balancers=[{
-                "container_name": "Outlier-Job-Container-nightly",
-                "container_port": 1337,
-                "target_group": self.jobs_blue_target_group  # Use the jobs blue target group
-            }]
+            )
         )
         self.jobs_service.attach_to_application_target_group(self.jobs_blue_target_group)
 
