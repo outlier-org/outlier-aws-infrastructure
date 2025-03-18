@@ -78,7 +78,7 @@ class DevApplicationStack(cdk.Stack):
             deployment_group_name=f"outlier-{self.sub_environment}",
             pipeline_name=f"outlier-{self.sub_environment}",
             source_branch="cdk-dev-application-changes",
-            repository_uri=ecr.repository.repositoryUri,
+            repository_uri=ecr.repository.repository_uri,
             service_name=f"outlier-service-{self.sub_environment}",
             buildspec_filename="buildspec_nightly.yml",
             appspec_filename=f"appspec_nightly_{self.sub_environment}.yaml",
