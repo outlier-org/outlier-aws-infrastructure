@@ -2,6 +2,7 @@ from aws_cdk import (
     aws_wafv2 as wafv2,
     aws_elasticloadbalancingv2 as elbv2,
     aws_logs as logs,
+    RemovalPolicy
 )
 from constructs import Construct
 from .base_construct import BaseConstruct
@@ -26,7 +27,7 @@ class WafConstruct(BaseConstruct):
             "WafLogGroup",
             log_group_name=f"aws-waf-logs-{self.environment}{name_suffix}",
             retention=logs.RetentionDays.ONE_MONTH,
-            removal_policy=cdk.RemovalPolicy.DESTROY
+            removal_policy=RemovalPolicy.DESTROY
         )
 
         # Create WAF ACL with unique name
