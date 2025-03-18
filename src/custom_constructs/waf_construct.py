@@ -17,22 +17,22 @@ class WafConstruct(BaseConstruct):
     ):
         super().__init__(scope, id)
 
-        # Use suffix to make log group name unique
-        log_suffix = f"-{suffix}" if suffix else ""
+        # Use suffix to make resource names unique
+        name_suffix = f"-{suffix}" if suffix else ""
 
-        # Create CloudWatch Log Group for WAF
+        # Create CloudWatch Log Group for WAF with unique name
         self._log_group = logs.LogGroup(
             self,
             "WafLogGroup",
-            log_group_name=f"aws-waf-logs-{self.environment}{log_suffix}",
+            log_group_name=f"aws-waf-logs-{self.environment}-{name_suffix}",
             retention=logs.RetentionDays.ONE_MONTH
         )
 
-        # Create WAF ACL with all four rules
+        # Create WAF ACL with unique name
         self._web_acl = wafv2.CfnWebACL(
             self,
             "OutlierApiWaf",
-            name=f"outlier-api-waf-{self.environment}",
+            name=f"outlier-api-waf-{self.environment}-{name_suffix}",  # Add suffix here
             description="WAF for Outlier API",
             scope='REGIONAL',
             default_action=wafv2.CfnWebACL.DefaultActionProperty(
@@ -40,7 +40,7 @@ class WafConstruct(BaseConstruct):
             ),
             visibility_config=wafv2.CfnWebACL.VisibilityConfigProperty(
                 cloud_watch_metrics_enabled=True,
-                metric_name=f"outlier-api-waf-{self.environment}",
+                metric_name=f"outlier-api-waf-{self.environment}-{name_suffix}",  # Add suffix here too
                 sampled_requests_enabled=True
             ),
             rules=[
