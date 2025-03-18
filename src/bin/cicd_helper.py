@@ -7,14 +7,11 @@ def github_cicd(gh, account, env, python_version):
     # Add a GitHub workflow for deploying the CDK stacks to the AWS account
     cdk_deployment_workflow = github.GithubWorkflow(gh, f"cdk-deploy-{env}")
     # Set up branch triggers based on environment
-    trigger_branches = {
-        "nightly": ["nightly"],
-        "prod": ["main"]
-    }
+    trigger_branches = {"nightly": ["nightly"], "prod": ["main"]}
 
     cdk_deployment_workflow.on(
         push={"branches": trigger_branches[env]} if env in trigger_branches else None,
-        workflow_dispatch={}
+        workflow_dispatch={},
     )
     cdk_deployment_workflow.add_jobs(
         {
@@ -44,7 +41,7 @@ def github_cicd(gh, account, env, python_version):
                         "with": {
                             "role-to-assume": f"arn:aws:iam::{account}:role/GitHubDeployRole",
                             "aws-region": os.getenv("CDK_DEFAULT_REGION"),
-                            "role-session-duration": "7200"
+                            "role-session-duration": "7200",
                         },
                     },
                     {

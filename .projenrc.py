@@ -17,7 +17,7 @@ aws_region = os.getenv("AWS_REGION", "us-east-1")
 project = AwsCdkPythonApp(
     author_email="dobson.dunavant@savvas.com",
     author_name="Dobson Dunavant",
-    cdk_version="2.153.0", # Find the latest CDK version here: https://pypi.org/project/aws-cdk-lib/
+    cdk_version="2.153.0",  # Find the latest CDK version here: https://pypi.org/project/aws-cdk-lib/
     cdk_version_pinning=True,
     module_name=python_module_name,
     name="outlier-aws-infrastructure",
@@ -27,11 +27,11 @@ project = AwsCdkPythonApp(
     poetry=True,
     app_entrypoint=f"{python_module_name}/app.py",
     deps=["aws-cdk-github-oidc"],
-    dev_deps=["projen@0.85.2", "ruff"], # Find the latest projen version here: https://pypi.org/project/projen/
-    github_options={
-        "pull_request_lint": False,
-        "workflows": True
-    },
+    dev_deps=[
+        "projen@0.85.2",
+        "ruff",
+    ],  # Find the latest projen version here: https://pypi.org/project/projen/
+    github_options={"pull_request_lint": False, "workflows": True},
     git_ignore_options={
         "ignore_patterns": [
             "__pycache__",
@@ -79,7 +79,9 @@ project.tasks.add_environment("CDK_DEFAULT_REGION", aws_region)
 project.tasks.remove_task("install:ci")
 
 # Then add our modified version
-project.tasks.add_task("install:ci", exec="poetry check --lock && poetry install --no-root")
+project.tasks.add_task(
+    "install:ci", exec="poetry check --lock && poetry install --no-root"
+)
 
 # Define the target AWS accounts for the different environments
 target_accounts = {

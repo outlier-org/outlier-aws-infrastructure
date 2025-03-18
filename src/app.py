@@ -8,7 +8,9 @@ from stacks.github_oidc_stack import GitHubOIDCStack
 
 # Inherit environment variables from npm run commands (displayed in .projen/tasks.json)
 environment = os.environ.get("ENVIRONMENT", "nightly")
-aws_environment = cdk.Environment(account=os.getenv("CDK_DEFAULT_ACCOUNT"), region=os.getenv("CDK_DEFAULT_REGION"))
+aws_environment = cdk.Environment(
+    account=os.getenv("CDK_DEFAULT_ACCOUNT"), region=os.getenv("CDK_DEFAULT_REGION")
+)
 
 # Instantiate the CDK app
 app = cdk.App()

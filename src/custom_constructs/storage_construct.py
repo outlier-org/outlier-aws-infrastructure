@@ -4,6 +4,7 @@ import aws_cdk as cdk
 from constructs import Construct
 from .base_construct import BaseConstruct
 
+
 class StorageConstruct(BaseConstruct):
     def __init__(self, scope: Construct, id: str):
         super().__init__(scope, id)
@@ -12,7 +13,7 @@ class StorageConstruct(BaseConstruct):
         self.drupal_bucket = s3.Bucket(
             self,
             "DrupalBucket",
-            bucket_name=f"outlier-alpha-drupal-files-{self.environment}-test",
+            bucket_name=f"outlier-alpha-drupal-files-{self.environment}",
             encryption=s3.BucketEncryption.S3_MANAGED,
             bucket_key_enabled=True,
             enforce_ssl=True,
@@ -20,15 +21,14 @@ class StorageConstruct(BaseConstruct):
             object_ownership=s3.ObjectOwnership.BUCKET_OWNER_ENFORCED,
         )
         cdk.Tags.of(self.drupal_bucket).add(
-            "savvas:security:s3:public-bucket:exempt",
-            "false"
+            "savvas:security:s3:public-bucket:exempt", "false"
         )
 
         # Student Progress Bucket
         self.progress_bucket = s3.Bucket(
             self,
             "ProgressBucket",
-            bucket_name=f"outlier-student-progress-{self.environment}-test",
+            bucket_name=f"outlier-student-progress-{self.environment}",
             encryption=s3.BucketEncryption.S3_MANAGED,
             bucket_key_enabled=True,
             enforce_ssl=True,
@@ -36,6 +36,5 @@ class StorageConstruct(BaseConstruct):
             object_ownership=s3.ObjectOwnership.BUCKET_OWNER_ENFORCED,
         )
         cdk.Tags.of(self.progress_bucket).add(
-            "savvas:security:s3:public-bucket:exempt",
-            "false"
+            "savvas:security:s3:public-bucket:exempt", "false"
         )

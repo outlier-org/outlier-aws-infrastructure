@@ -4,6 +4,7 @@ import aws_cdk as cdk
 from constructs import Construct
 from .base_construct import BaseConstruct
 
+
 class IamConstruct(BaseConstruct):
     def __init__(self, scope: Construct, id: str):
         super().__init__(scope, id)
@@ -17,12 +18,20 @@ class IamConstruct(BaseConstruct):
             description="Allows ECS tasks to call AWS services on your behalf.",
             managed_policies=[
                 # AWS Managed Policies
-                iam.ManagedPolicy.from_aws_managed_policy_name("service-role/AmazonECSTaskExecutionRolePolicy"),
-                iam.ManagedPolicy.from_aws_managed_policy_name("CloudWatchReadOnlyAccess"),
-                iam.ManagedPolicy.from_aws_managed_policy_name("SecretsManagerReadWrite"),
-                iam.ManagedPolicy.from_aws_managed_policy_name("AmazonKinesisFirehoseFullAccess"),
+                iam.ManagedPolicy.from_aws_managed_policy_name(
+                    "service-role/AmazonECSTaskExecutionRolePolicy"
+                ),
+                iam.ManagedPolicy.from_aws_managed_policy_name(
+                    "CloudWatchReadOnlyAccess"
+                ),
+                iam.ManagedPolicy.from_aws_managed_policy_name(
+                    "SecretsManagerReadWrite"
+                ),
+                iam.ManagedPolicy.from_aws_managed_policy_name(
+                    "AmazonKinesisFirehoseFullAccess"
+                ),
                 iam.ManagedPolicy.from_aws_managed_policy_name("AmazonSQSFullAccess"),
-            ]
+            ],
         )
 
         # Add custom policies that match OutlierAPISecretManagerReadPolicy and OutlierAPIS3AccessPolicy
@@ -32,8 +41,8 @@ class IamConstruct(BaseConstruct):
                 actions=["secretsmanager:GetSecretValue"],
                 resources=[
                     f"arn:aws:secretsmanager:{self.region}:{self.account}:secret:outlier-api-secrets*",
-                    f"arn:aws:secretsmanager:{self.region}:{self.account}:secret:DATADOG_API_KEY*"
-                ]
+                    f"arn:aws:secretsmanager:{self.region}:{self.account}:secret:DATADOG_API_KEY*",
+                ],
             )
         )
 
@@ -43,27 +52,23 @@ class IamConstruct(BaseConstruct):
                 actions=[
                     "logs:CreateLogGroup",
                     "logs:CreateLogStream",
-                    "logs:PutLogEvents"
+                    "logs:PutLogEvents",
                 ],
                 resources=[
                     f"arn:aws:logs:{self.region}:{self.account}:log-group:/aws/ecs/*",
-                    f"arn:aws:logs:{self.region}:{self.account}:log-group:/aws/ecs/*:*"
-                ]
+                    f"arn:aws:logs:{self.region}:{self.account}:log-group:/aws/ecs/*:*",
+                ],
             )
         )
 
         self._task_execution_role.add_to_policy(
             iam.PolicyStatement(
                 effect=iam.Effect.ALLOW,
-                actions=[
-                    "s3:GetObject",
-                    "s3:PutObject",
-                    "s3:ListBucket"
-                ],
+                actions=["s3:GetObject", "s3:PutObject", "s3:ListBucket"],
                 resources=[
-                    f"arn:aws:s3:::outlier-student-progress-{self.environment}-test",
-                    f"arn:aws:s3:::outlier-student-progress-{self.environment}-test/*"
-                ]
+                    f"arn:aws:s3:::outlier-student-progress-{self.environment}",
+                    f"arn:aws:s3:::outlier-student-progress-{self.environment}",
+                ],
             )
         )
 
@@ -72,22 +77,18 @@ class IamConstruct(BaseConstruct):
             self,
             "EcsTaskRole",
             role_name=f"ecsTaskRole-{self.environment}-test",
-            assumed_by=iam.ServicePrincipal("ecs-tasks.amazonaws.com")
+            assumed_by=iam.ServicePrincipal("ecs-tasks.amazonaws.com"),
         )
 
         # Add S3 permissions to Task Role
         self._task_role.add_to_policy(
             iam.PolicyStatement(
                 effect=iam.Effect.ALLOW,
-                actions=[
-                    "s3:GetObject",
-                    "s3:PutObject",
-                    "s3:ListBucket"
-                ],
+                actions=["s3:GetObject", "s3:PutObject", "s3:ListBucket"],
                 resources=[
-                    f"arn:aws:s3:::outlier-student-progress-{self.environment}-test",
-                    f"arn:aws:s3:::outlier-student-progress-{self.environment}-test/*"
-                ]
+                    f"arn:aws:s3:::outlier-student-progress-{self.environment}",
+                    f"arn:aws:s3:::outlier-student-progress-{self.environment}",
+                ],
             )
         )
 
@@ -98,8 +99,8 @@ class IamConstruct(BaseConstruct):
                 actions=["secretsmanager:GetSecretValue"],
                 resources=[
                     f"arn:aws:secretsmanager:{self.region}:{self.account}:secret:outlier-api-secrets*",
-                    f"arn:aws:secretsmanager:{self.region}:{self.account}:secret:DATADOG_API_KEY*"
-                ]
+                    f"arn:aws:secretsmanager:{self.region}:{self.account}:secret:DATADOG_API_KEY*",
+                ],
             )
         )
 
@@ -110,8 +111,10 @@ class IamConstruct(BaseConstruct):
             role_name=f"AWSCodeDeployRoleForECS-{self.environment}-test",
             assumed_by=iam.ServicePrincipal("codedeploy.amazonaws.com"),
             managed_policies=[
-                iam.ManagedPolicy.from_aws_managed_policy_name("AWSCodeDeployRoleForECS")
-            ]
+                iam.ManagedPolicy.from_aws_managed_policy_name(
+                    "AWSCodeDeployRoleForECS"
+                )
+            ],
         )
 
         # CodeBuild Role
@@ -119,7 +122,7 @@ class IamConstruct(BaseConstruct):
             self,
             "CodeBuildRole",
             role_name=f"codebuild-outlier-service-codebuild-{self.environment}-test-service-role",
-            assumed_by=iam.ServicePrincipal("codebuild.amazonaws.com")
+            assumed_by=iam.ServicePrincipal("codebuild.amazonaws.com"),
         )
 
         # Add permissions to CodeBuild Role
@@ -142,9 +145,9 @@ class IamConstruct(BaseConstruct):
                     "s3:GetObjectVersion",
                     "s3:PutObject",
                     "s3:GetBucketAcl",
-                    "s3:GetBucketLocation"
+                    "s3:GetBucketLocation",
                 ],
-                resources=["*"]
+                resources=["*"],
             )
         )
 
@@ -168,9 +171,9 @@ class IamConstruct(BaseConstruct):
                     "elasticloadbalancing:DescribeRules",
                     "elasticloadbalancing:DescribeTags",
                     "tag:GetResources",
-                    "tag:GetTagKeys"
+                    "tag:GetTagKeys",
                 ],
-                resources=["*"]
+                resources=["*"],
             )
         )
 

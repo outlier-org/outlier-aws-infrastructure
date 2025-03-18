@@ -3,14 +3,13 @@ import aws_cdk as cdk
 from constructs import Construct
 from .base_construct import BaseConstruct
 
+
 class NetworkConstruct(BaseConstruct):
     def __init__(self, scope: Construct, id: str):
         super().__init__(scope, id)
 
         self.vpc = ec2.Vpc.from_lookup(
-            self,
-            "ExistingVPC",
-            vpc_id="vpc-00059e30c80aa84f2"
+            self, "ExistingVPC", vpc_id="vpc-00059e30c80aa84f2"
         )
 
         self.create_security_groups()
@@ -26,7 +25,7 @@ class NetworkConstruct(BaseConstruct):
             vpc=self.vpc,
             security_group_name=alb_name,
             description=f"Security group for Outlier ALB - {self.environment}",
-            allow_all_outbound=True
+            allow_all_outbound=True,
         )
 
         # Service Security Group
@@ -37,7 +36,7 @@ class NetworkConstruct(BaseConstruct):
             vpc=self.vpc,
             security_group_name=service_name,
             description=f"Security group for Outlier Services - {self.environment}",
-            allow_all_outbound=True
+            allow_all_outbound=True,
         )
 
         # Import existing RDS Security Group
@@ -45,7 +44,7 @@ class NetworkConstruct(BaseConstruct):
             self,
             "ExistingRdsSecurityGroup",
             "sg-05fcdaf33c1d2a016",  # The actual RDS security group ID from AWS
-            allow_all_outbound=True
+            allow_all_outbound=True,
         )
 
         # Secrets Manager Endpoint Security Group
@@ -56,7 +55,7 @@ class NetworkConstruct(BaseConstruct):
             vpc=self.vpc,
             security_group_name=secrets_name,
             description=f"Security group for Secrets Manager VPC Endpoint - {self.environment}",
-            allow_all_outbound=True
+            allow_all_outbound=True,
         )
 
         # Add ingress rules
@@ -65,46 +64,46 @@ class NetworkConstruct(BaseConstruct):
         self.alb_sg.add_ingress_rule(
             peer=ec2.Peer.any_ipv4(),
             connection=ec2.Port.tcp(80),
-            description="Allow HTTP from anywhere"
+            description="Allow HTTP from anywhere",
         )
         self.alb_sg.add_ingress_rule(
             peer=ec2.Peer.any_ipv4(),
             connection=ec2.Port.tcp(443),
-            description="Allow HTTPS from anywhere"
+            description="Allow HTTPS from anywhere",
         )
 
         # Service rules
         self.service_sg.add_ingress_rule(
             peer=ec2.Peer.security_group_id(self.alb_sg.security_group_id),
             connection=ec2.Port.tcp(1337),
-            description="Allow inbound from ALB"
+            description="Allow inbound from ALB",
         )
 
         # RDS rules
         self.rds_sg.add_ingress_rule(
             peer=ec2.Peer.security_group_id(self.service_sg.security_group_id),
             connection=ec2.Port.tcp(5432),
-            description="Allow PostgreSQL from ECS service"
+            description="Allow PostgreSQL from ECS service",
         )
         # Add ingress from admin EC2
         self.rds_sg.add_ingress_rule(
             peer=ec2.Peer.security_group_id("sg-0ce94b9da62545a35"),
             connection=ec2.Port.tcp(5432),
-            description="Allow PostgreSQL from nightly admin EC2"
+            description="Allow PostgreSQL from nightly admin EC2",
         )
 
         # Secrets Manager rules
         self.secrets_sg.add_ingress_rule(
             peer=ec2.Peer.security_group_id(self.service_sg.security_group_id),
             connection=ec2.Port.tcp(443),
-            description="Allow HTTPS from ECS service"
+            description="Allow HTTPS from ECS service",
         )
 
         # Add standard tags using the variables we stored
         sg_names = {
             self.alb_sg: alb_name,
             self.service_sg: service_name,
-            self.secrets_sg: secrets_name
+            self.secrets_sg: secrets_name,
         }
 
     def create_vpc_endpoints(self):
@@ -115,7 +114,7 @@ class NetworkConstruct(BaseConstruct):
             ("SecretsManager", ec2.InterfaceVpcEndpointAwsService.SECRETS_MANAGER),
             ("EcrApi", ec2.InterfaceVpcEndpointAwsService.ECR),
             ("EcrDkr", ec2.InterfaceVpcEndpointAwsService.ECR_DOCKER),
-            ("Logs", ec2.InterfaceVpcEndpointAwsService.CLOUDWATCH_LOGS)
+            ("Logs", ec2.InterfaceVpcEndpointAwsService.CLOUDWATCH_LOGS),
         ]
 
         for name, service in interface_endpoints:
@@ -123,8 +122,10 @@ class NetworkConstruct(BaseConstruct):
                 f"{name}Endpoint-test",
                 service=service,
                 security_groups=[self.service_sg],
-                subnets=ec2.SubnetSelection(subnet_type=ec2.SubnetType.PRIVATE_WITH_EGRESS),
-                private_dns_enabled=True
+                subnets=ec2.SubnetSelection(
+                    subnet_type=ec2.SubnetType.PRIVATE_WITH_EGRESS
+                ),
+                private_dns_enabled=True,
             )
 
     @property

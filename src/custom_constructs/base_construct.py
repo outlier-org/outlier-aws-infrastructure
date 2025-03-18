@@ -19,7 +19,7 @@ class BaseConstruct(Construct):
         self.tags = {
             "Environment": self.environment,
             "ManagedBy": "AWS-CDK-2",
-            "Project": "outlier-aws-infrastructure"
+            "Project": "outlier-aws-infrastructure",
         }
 
         # Add environment-specific configuration

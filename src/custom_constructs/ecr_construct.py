@@ -1,31 +1,31 @@
-# src/custom_constructs/ecr_construct.py
-from aws_cdk import aws_ecr as ecr
+# src/custom_constructs/ecr_construct_new.py
 import aws_cdk as cdk
 from constructs import Construct
+from aws_cdk import aws_ecr as ecr
 from .base_construct import BaseConstruct
 
-class EcrConstruct(BaseConstruct):
-    def __init__(self, scope: Construct, id: str):
-        super().__init__(scope, id)
 
-        self.repository = ecr.Repository(
+class EcrConstruct(BaseConstruct):
+    def __init__(
+        self, scope: Construct, id: str, repository_name: str, **kwargs
+    ) -> None:
+        super().__init__(scope, id, **kwargs)
+
+        self._repository = ecr.Repository(
             self,
-            "OutlierEcr",
-            repository_name="outlier-ecr-test",
+            "EcrRepo",
+            repository_name=repository_name,
+            removal_policy=cdk.RemovalPolicy.DESTROY,
             lifecycle_rules=[
                 ecr.LifecycleRule(
-                    description="Delete when imageCountMoreThan (10)",
-                    max_image_count=10,
+                    description="Keep only the last 10 images",
+                    max_image_count=10,  # Keep only the last 10 images
                     rule_priority=1,
-                    tag_status=ecr.TagStatus.ANY
+                    tag_status=ecr.TagStatus.ANY,
                 )
             ],
         )
 
-        # Add tags
-        cdk.Tags.of(self.repository).add("bounded_context", "outlier")
-        cdk.Tags.of(self.repository).add("env", self.environment)
-
     @property
-    def ecr_repository(self) -> ecr.IRepository:
-        return self.repository
+    def repository(self) -> ecr.IRepository:
+        return self._repository

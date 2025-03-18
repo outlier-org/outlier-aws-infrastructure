@@ -21,7 +21,9 @@ class GitHubOIDCStack(Stack):
             repo=repo_name,
             role_name="GitHubDeployRole",
             max_session_duration=Duration.hours(2),
-            managed_policies=[ManagedPolicy.from_aws_managed_policy_name("AdministratorAccess")],
+            managed_policies=[
+                ManagedPolicy.from_aws_managed_policy_name("AdministratorAccess")
+            ],
         )
 
         CfnOutput(self, "DeployRole", value=deploy_role.role_arn)

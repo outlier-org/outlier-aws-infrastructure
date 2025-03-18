@@ -2,82 +2,89 @@ import aws_cdk as cdk
 from constructs import Construct
 from aws_cdk import aws_ec2 as ec2
 
-from custom_constructs.network_construct_new import NetworkConstructNew
-from custom_constructs.ecr_construct_new import EcrConstructNew
-from custom_constructs.alb_construct_new import AlbConstructNew
-from custom_constructs.ecs_construct_new import EcsConstructNew
-from custom_constructs.pipeline_construct_new import PipelineConstructNew
+from custom_constructs.network_construct import NetworkConstruct
+from custom_constructs.ecr_construct_new import EcrConstruct
+from custom_constructs.alb_construct_new import AlbConstruct
+from custom_constructs.ecs_construct_new import EcsConstruct
+from custom_constructs.pipeline_construct_new import PipelineConstruct
 from custom_constructs.waf_construct import WafConstruct
+
 
 class DevApplicationStack(cdk.Stack):
     def __init__(self, scope: Construct, id: str, **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
 
+        sub_environment = "dev"
+        self.sub_environment = sub_environment
+
+        # Tag all resources in the stack
+        cdk.Tags.of(self).add("SubEnvironment", self.sub_environment)
+
         # Network resources
-        network = NetworkConstructNew(
+        network = NetworkConstruct(
             self,
-            "Network-Dev",  # resource-dev pattern
-            suffix="dev"
+            f"Network-{self.sub_environment}",
+            sub_environment=f"-{self.sub_environment}",
         )
 
         # ECR Repository
-        ecr = EcrConstructNew(
+        ecr = EcrConstruct(
             self,
-            "ECR-Dev",  # resource-dev pattern
-            repository_name="outlier-ecr-dev"
+            f"ECR-{self.sub_environment}",
+            repository_name=f"outlier-ecr-{self.sub_environment}",
         )
 
         # Load Balancer and DNS
-        alb = AlbConstructNew(
+        alb = AlbConstruct(
             self,
-            "LoadBalancer-Dev",  # resource-dev pattern
+            f"LoadBalancer-{self.sub_environment}",
             vpc=network.vpc,
             security_group=network.alb_security_group,
-            load_balancer_name="outlier-dev",
-            subdomain="api-dev"
+            load_balancer_name=f"outlier-{self.sub_environment}",
+            subdomain=f"api-{self.sub_environment}",
         )
 
         # Create and associate WAF
         waf = WafConstruct(
             self,
-            "WAF-Dev",
+            f"WAF-{self.sub_environment}",
             alb=alb.alb,
-            suffix="dev"
+            sub_environment=f"-{self.sub_environment}",
         )
 
         # ECS Cluster, Service and Task Definition
-        ecs = EcsConstructNew(
+        ecs = EcsConstruct(
             self,
-            "ECS-Dev",  # resource-dev pattern
+            f"ECS-{self.sub_environment}",
             vpc=network.vpc,
             security_group=network.service_security_group,
             ecr_repository=ecr.repository,
             blue_target_group=alb.blue_target_group,
             desired_count=1,
-            cluster_name="outlier-dev",
-            container_name="Outlier-Service-Container-nightly-dev",
-            log_group_name="/ecs/Outlier-Service-nightly-dev"
+            cluster_name=f"outlier-service-nightly-{self.sub_environment}",
+            container_name=f"Outlier-Service-Container-nightly-{self.sub_environment}",
+            log_group_name=f"/ecs/Outlier-Service-nightly-{self.sub_environment}",
         )
 
         # CI/CD Pipeline
-        pipeline = PipelineConstructNew(
+        pipeline = PipelineConstruct(
             self,
-            "Pipeline-Dev",
+            f"Pipeline-{self.sub_environment}",
             service=ecs.service,
             https_listener=alb.https_listener,
             http_listener=alb.http_listener,
             blue_target_group=alb.blue_target_group,
             green_target_group=alb.green_target_group,
-            application_name="outlier-dev",
-            deployment_group_name="outlier-dev",
-            pipeline_name="outlier-dev",
+            application_name=f"outlier-{self.sub_environment}",
+            deployment_group_name=f"outlier-{self.sub_environment}",
+            pipeline_name=f"outlier-{self.sub_environment}",
             source_branch="cdk-dev-application-changes",
-            repository_uri=f"{self.account}.dkr.ecr.{self.region}.amazonaws.com/outlier-ecr-dev",
-            service_name="outlier-service-dev",
+            repository_uri=ecr.repository.repositoryUri,
+            service_name=f"outlier-service-{self.sub_environment}",
             buildspec_filename="buildspec_nightly.yml",
-            appspec_filename="appspec_nightly_dev.yaml",
-            taskdef_filename="taskdef_nightly_dev.json",
-            environment_value="DEV"  # Override the default value
+            appspec_filename=f"appspec_nightly_{self.sub_environment}.yaml",
+            taskdef_filename=f"taskdef_nightly_{self.sub_environment}.json",
+            environment_value=self.sub_environment.upper(),
         )
 
         # Outputs
