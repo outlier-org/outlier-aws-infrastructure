@@ -40,8 +40,9 @@ class DevApplicationStack(cdk.Stack):
         # Create and associate WAF
         waf = WafConstruct(
             self,
-            "WAF-Dev",  # resource-dev pattern
-            alb=alb.alb
+            "WAF-Dev",
+            alb=alb.alb,
+            suffix="dev"
         )
 
         # ECS Cluster, Service and Task Definition

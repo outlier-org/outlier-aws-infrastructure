@@ -6,20 +6,25 @@ from aws_cdk import (
 from constructs import Construct
 from .base_construct import BaseConstruct
 
+
 class WafConstruct(BaseConstruct):
     def __init__(
             self,
             scope: Construct,
             id: str,
-            alb: elbv2.IApplicationLoadBalancer
+            alb: elbv2.IApplicationLoadBalancer,
+            suffix: str = "",
     ):
         super().__init__(scope, id)
+
+        # Use suffix to make log group name unique
+        log_suffix = f"-{suffix}" if suffix else ""
 
         # Create CloudWatch Log Group for WAF
         self._log_group = logs.LogGroup(
             self,
             "WafLogGroup",
-            log_group_name=f"aws-waf-logs-{self.environment}",
+            log_group_name=f"aws-waf-logs-{self.environment}{log_suffix}",
             retention=logs.RetentionDays.ONE_MONTH
         )
 
