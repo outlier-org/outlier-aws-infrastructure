@@ -1,3 +1,4 @@
+# src/custom_constructs/alb_construct_new.py
 import aws_cdk as cdk
 from constructs import Construct
 from aws_cdk import (
@@ -12,42 +13,55 @@ from .base_construct import BaseConstruct
 
 
 class AlbConstructNew(BaseConstruct):
-    def __init__(self, scope: Construct, id: str, vpc: ec2.IVpc, security_group: ec2.ISecurityGroup, **kwargs) -> None:
+    def __init__(
+            self,
+            scope: Construct,
+            id: str,
+            vpc: ec2.IVpc,
+            security_group: ec2.ISecurityGroup,
+            load_balancer_name: str = "outlier-blue-green",
+            subdomain: str = "api",
+            **kwargs
+    ) -> None:
         super().__init__(scope, id, **kwargs)
 
-        # Load Balancer
+        # Store parameters
+        self.load_balancer_name = load_balancer_name
+        self.subdomain = subdomain
+
+        # Load Balancer - identical to original
         self._alb = elbv2.ApplicationLoadBalancer(
-            self, "BlueGreenALB",
+            self, "ALB",
             vpc=vpc,
             internet_facing=True,
             security_group=security_group,
-            load_balancer_name="outlier-blue-green"
+            load_balancer_name=self.load_balancer_name
         )
 
-        # Import the hosted zone
+        # Import the hosted zone - using same zone ID as original
         hosted_zone = route53.HostedZone.from_hosted_zone_attributes(
             self, "ExistingHostedZone",
             hosted_zone_id="Z05574991AFW5NGZ1X8DH",
             zone_name="nightly.savvasoutlier.com"
         )
 
-        # Create an A record pointing to the ALB
+        # Create an A record pointing to the ALB - parameterized subdomain
         route53.ARecord(
             self, "ApiDnsRecord",
             zone=hosted_zone,
-            record_name="api",  # This will create api.nightly.savvasoutlier.com
+            record_name=self.subdomain,
             target=route53.RecordTarget.from_alias(
                 targets.LoadBalancerTarget(self._alb)
             )
         )
 
-        # Import the SSL certificate
+        # Import the SSL certificate - same certificate as original
         certificate = acm.Certificate.from_certificate_arn(
             self, "Certificate",
             "arn:aws:acm:us-east-1:528757783796:certificate/71eac7f3-f4f4-4a6c-a32b-d6dad41f94e8"
         )
 
-        # Target Groups
+        # Target Groups - identical to original
         self._blue_target_group = elbv2.ApplicationTargetGroup(
             self, "BlueTargetGroup",
             vpc=vpc,
@@ -74,7 +88,7 @@ class AlbConstructNew(BaseConstruct):
             )
         )
 
-        # HTTPS Listener
+        # HTTPS Listener - identical to original
         self._https_listener = self._alb.add_listener(
             "HttpsListener",
             port=443,
@@ -84,7 +98,7 @@ class AlbConstructNew(BaseConstruct):
             default_target_groups=[self._blue_target_group]
         )
 
-        # HTTP Listener (redirects to HTTPS)
+        # HTTP Listener (redirects to HTTPS) - identical to original
         self._http_listener = self._alb.add_listener(
             "HttpListener",
             port=80,

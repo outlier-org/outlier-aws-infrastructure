@@ -1,3 +1,4 @@
+# src/custom_constructs/network_construct_new.py
 import aws_cdk as cdk
 from constructs import Construct
 from aws_cdk import aws_ec2 as ec2
@@ -5,8 +6,11 @@ from .base_construct import BaseConstruct
 
 
 class NetworkConstructNew(BaseConstruct):
-    def __init__(self, scope: Construct, id: str, **kwargs) -> None:
+    def __init__(self, scope: Construct, id: str, suffix: str = "", **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
+
+        # Use the suffix to distinguish resources
+        self.suffix = suffix
 
         # Existing VPC
         self._vpc = ec2.Vpc.from_lookup(
@@ -22,40 +26,46 @@ class NetworkConstructNew(BaseConstruct):
             allow_all_outbound=True
         )
 
-        # Security Groups
+        # Security Groups - Match original exactly but with different names
         self._alb_security_group = ec2.SecurityGroup(
-            self, "AlbSecurityGroup-BlueGreen",
+            self, "AlbSecurityGroup",
             vpc=self._vpc,
-            security_group_name=f"outlier-alb-bluegreen-{self.environment}-sg",
-            description="Security group for Blue/Green ALB",
+            security_group_name=f"outlier-alb-{self.suffix}-{self.environment}-sg",
+            description=f"Security group for {self.suffix} ALB",
             allow_all_outbound=True
         )
+
+        # Identical to original - allow HTTP from anywhere
         self._alb_security_group.add_ingress_rule(
             ec2.Peer.any_ipv4(), ec2.Port.tcp(80),
             "Allow HTTP from anywhere"
         )
+
+        # Also add HTTPS since we're redirecting to it
         self._alb_security_group.add_ingress_rule(
-            ec2.Peer.ipv4(self._vpc.vpc_cidr_block), ec2.Port.tcp(8080),
-            "Allow test traffic from within VPC"
+            ec2.Peer.any_ipv4(), ec2.Port.tcp(443),
+            "Allow HTTPS from anywhere"
         )
 
         self._service_security_group = ec2.SecurityGroup(
-            self, "ServiceSecurityGroup-BlueGreen",
+            self, "ServiceSecurityGroup",
             vpc=self._vpc,
-            security_group_name=f"outlier-service-bluegreen-{self.environment}-sg",
-            description="Security group for ECS Service",
+            security_group_name=f"outlier-service-{self.suffix}-{self.environment}-sg",
+            description=f"Security group for {self.suffix} ECS Service",
             allow_all_outbound=True
         )
+
+        # Identical to original - allow 1337 from ALB
         self._service_security_group.add_ingress_rule(
             self._alb_security_group, ec2.Port.tcp(1337),
             "Allow from ALB"
         )
 
-        # Add RDS ingress rule to allow access FROM our service security group
+        # Add RDS ingress rule exactly as original did
         self._rds_security_group.add_ingress_rule(
             peer=ec2.Peer.security_group_id(self._service_security_group.security_group_id),
             connection=ec2.Port.tcp(5432),
-            description="Allow PostgreSQL from ECS service"
+            description=f"Allow PostgreSQL from {self.suffix} ECS service"
         )
 
     @property

@@ -1,3 +1,4 @@
+# src/custom_constructs/ecr_construct_new.py
 import aws_cdk as cdk
 from constructs import Construct
 from aws_cdk import aws_ecr as ecr
@@ -5,13 +6,16 @@ from .base_construct import BaseConstruct
 
 
 class EcrConstructNew(BaseConstruct):
-    def __init__(self, scope: Construct, id: str, **kwargs) -> None:
+    def __init__(self, scope: Construct, id: str, repository_name: str = "outlier-ecr-nightly", **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
 
-        # ECR repository
+        # Store parameters
+        self.repository_name = repository_name
+
+        # ECR repository with identical lifecycle rules as original
         self._repository = ecr.Repository(
-            self, "OutlierEcrRepo",
-            repository_name="outlier-ecr-nightly",
+            self, "EcrRepo",
+            repository_name=self.repository_name,
             removal_policy=cdk.RemovalPolicy.DESTROY,
             lifecycle_rules=[
                 ecr.LifecycleRule(
