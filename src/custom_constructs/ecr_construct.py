@@ -1,4 +1,3 @@
-# src/custom_constructs/ecr_construct_new.py
 import aws_cdk as cdk
 from constructs import Construct
 from aws_cdk import aws_ecr as ecr

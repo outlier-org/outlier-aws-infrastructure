@@ -3,10 +3,10 @@ from constructs import Construct
 from aws_cdk import aws_ec2 as ec2
 
 from custom_constructs.network_construct import NetworkConstruct
-from custom_constructs.ecr_construct_new import EcrConstruct
-from custom_constructs.alb_construct_new import AlbConstruct
-from custom_constructs.ecs_construct_new import EcsConstruct
-from custom_constructs.pipeline_construct_new import PipelineConstruct
+from custom_constructs.ecr_construct import EcrConstruct
+from custom_constructs.alb_construct import AlbConstruct
+from custom_constructs.ecs_construct import EcsConstruct
+from custom_constructs.pipeline_construct import PipelineConstruct
 from custom_constructs.waf_construct import WafConstruct
 
 
