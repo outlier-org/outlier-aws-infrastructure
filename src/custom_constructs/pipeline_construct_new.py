@@ -7,19 +7,18 @@ from aws_cdk import (
     aws_codedeploy as codedeploy,
     aws_s3 as s3,
     aws_iam as iam,
-    aws_elasticloadbalancingv2 as elbv2,
     aws_ecs as ecs,
+    aws_elasticloadbalancingv2 as elbv2,
     Duration
 )
+from .base_construct import BaseConstruct
 
 
-class PipelineConstruct(Construct):
+class PipelineConstructNew(BaseConstruct):
     def __init__(self, scope: Construct, id: str, service: ecs.FargateService,
-                 https_listener: elbv2.IApplicationListener,
-                 http_listener: elbv2.IApplicationListener,
-                 blue_target_group: elbv2.IApplicationTargetGroup,
-                 green_target_group: elbv2.IApplicationTargetGroup,
-                 account: str, region: str, **kwargs) -> None:
+                 https_listener: elbv2.IApplicationListener, http_listener: elbv2.IApplicationListener,
+                 blue_target_group: elbv2.IApplicationTargetGroup, green_target_group: elbv2.IApplicationTargetGroup,
+                 **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
 
         # CodeDeploy Setup
@@ -28,7 +27,7 @@ class PipelineConstruct(Construct):
             application_name="outlier-blue-green"
         )
 
-        self.deployment_group = codedeploy.EcsDeploymentGroup(
+        self._deployment_group = codedeploy.EcsDeploymentGroup(
             self, "CodeDeployGroup",
             application=codedeploy_app,
             service=service,
@@ -57,7 +56,7 @@ class PipelineConstruct(Construct):
             ),
             environment_variables={
                 "REPOSITORY_URI": codebuild.BuildEnvironmentVariable(
-                    value=f"{account}.dkr.ecr.{region}.amazonaws.com/outlier-ecr-nightly"
+                    value=f"{self.account}.dkr.ecr.{self.region}.amazonaws.com/outlier-ecr-nightly"
                 ),
                 "SERVICE_NAME": codebuild.BuildEnvironmentVariable(
                     value="outlier-service-nightly"
@@ -144,7 +143,7 @@ class PipelineConstruct(Construct):
             actions=[
                 codepipeline_actions.CodeDeployEcsDeployAction(
                     action_name="Deploy",
-                    deployment_group=self.deployment_group,
+                    deployment_group=self._deployment_group,
                     app_spec_template_file=build_output.at_path("appspec_nightly.yaml"),
                     task_definition_template_file=build_output.at_path("taskdef_nightly.json"),
                     container_image_inputs=[
@@ -156,3 +155,7 @@ class PipelineConstruct(Construct):
                 )
             ]
         )
+
+    @property
+    def deployment_group(self) -> codedeploy.IEcsDeploymentGroup:
+        return self._deployment_group

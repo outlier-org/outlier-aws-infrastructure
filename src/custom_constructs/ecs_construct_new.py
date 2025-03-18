@@ -8,16 +8,15 @@ from aws_cdk import (
     aws_ecr as ecr,
     aws_elasticloadbalancingv2 as elbv2
 )
+from .base_construct import BaseConstruct
 
 
-class EcsConstruct(Construct):
-    def __init__(self, scope: Construct, id: str, vpc: ec2.IVpc,
-                 security_group: ec2.ISecurityGroup, ecr_repository: ecr.IRepository,
-                 blue_target_group: elbv2.IApplicationTargetGroup,
-                 account: str, region: str, **kwargs) -> None:
+class EcsConstructNew(BaseConstruct):
+    def __init__(self, scope: Construct, id: str, vpc: ec2.IVpc, security_group: ec2.ISecurityGroup,
+                 ecr_repository: ecr.IRepository, blue_target_group: elbv2.IApplicationTargetGroup, **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
 
-        # ECS Log Group
+        # ECS Logs
         ecs_logs = logs.LogGroup(
             self,
             "EcsLogGroup",
@@ -27,7 +26,7 @@ class EcsConstruct(Construct):
         )
 
         # ECS Cluster
-        self.cluster = ecs.Cluster(
+        self._cluster = ecs.Cluster(
             self, "BlueGreenCluster",
             vpc=vpc,
             cluster_name="outlier-blue-green"
@@ -36,7 +35,7 @@ class EcsConstruct(Construct):
         # Task Execution Role
         task_execution_role = iam.Role.from_role_arn(
             self, "TaskExecutionRole",
-            f"arn:aws:iam::{account}:role/ecsTaskExecutionRole"
+            f"arn:aws:iam::{self.account}:role/ecsTaskExecutionRole"
         )
 
         # Attach an inline policy
@@ -58,7 +57,7 @@ class EcsConstruct(Construct):
             )
         )
 
-        # Task definition
+        # Create task definition with correct resources
         task_definition = ecs.FargateTaskDefinition(
             self, "BlueGreenTaskDef",
             execution_role=task_execution_role,
@@ -67,16 +66,12 @@ class EcsConstruct(Construct):
             memory_limit_mib=4096  # 4GB
         )
 
-        # Container configuration
+        # Add container with minimal config (CodeDeploy will update this)
         app_container = task_definition.add_container(
             "Outlier-Service-Container-nightly",
             image=ecs.ContainerImage.from_ecr_repository(
                 ecr_repository,
                 tag="latest"
-            ),
-            logging=ecs.LogDrivers.aws_logs(
-                stream_prefix="ecs",
-                log_group=ecs_logs
             )
         )
 
@@ -84,10 +79,9 @@ class EcsConstruct(Construct):
             ecs.PortMapping(container_port=1337)
         )
 
-        # Fargate Service
-        self.service = ecs.FargateService(
+        self._service = ecs.FargateService(
             self, "BlueGreenService",
-            cluster=self.cluster,
+            cluster=self._cluster,
             task_definition=task_definition,
             desired_count=2,
             security_groups=[security_group],
@@ -100,4 +94,12 @@ class EcsConstruct(Construct):
         )
 
         # Attach the service to the ALB Target Group
-        self.service.attach_to_application_target_group(blue_target_group)
+        self._service.attach_to_application_target_group(blue_target_group)
+
+    @property
+    def cluster(self) -> ecs.ICluster:
+        return self._cluster
+
+    @property
+    def service(self) -> ecs.FargateService:
+        return self._service

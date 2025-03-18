@@ -3,21 +3,20 @@ from constructs import Construct
 from aws_cdk import (
     aws_elasticloadbalancingv2 as elbv2,
     aws_ec2 as ec2,
-    aws_certificatemanager as acm,
     aws_route53 as route53,
     aws_route53_targets as targets,
+    aws_certificatemanager as acm,
     Duration
 )
+from .base_construct import BaseConstruct
 
 
-class AlbConstruct(Construct):
-    def __init__(self, scope: Construct, id: str, vpc: ec2.IVpc,
-                 security_group: ec2.ISecurityGroup, cert_arn: str,
-                 hosted_zone_id: str, zone_name: str, **kwargs) -> None:
+class AlbConstructNew(BaseConstruct):
+    def __init__(self, scope: Construct, id: str, vpc: ec2.IVpc, security_group: ec2.ISecurityGroup, **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
 
         # Load Balancer
-        self.alb = elbv2.ApplicationLoadBalancer(
+        self._alb = elbv2.ApplicationLoadBalancer(
             self, "BlueGreenALB",
             vpc=vpc,
             internet_facing=True,
@@ -25,13 +24,31 @@ class AlbConstruct(Construct):
             load_balancer_name="outlier-blue-green"
         )
 
+        # Import the hosted zone
+        hosted_zone = route53.HostedZone.from_hosted_zone_attributes(
+            self, "ExistingHostedZone",
+            hosted_zone_id="Z05574991AFW5NGZ1X8DH",
+            zone_name="nightly.savvasoutlier.com"
+        )
+
+        # Create an A record pointing to the ALB
+        route53.ARecord(
+            self, "ApiDnsRecord",
+            zone=hosted_zone,
+            record_name="api",  # This will create api.nightly.savvasoutlier.com
+            target=route53.RecordTarget.from_alias(
+                targets.LoadBalancerTarget(self._alb)
+            )
+        )
+
         # Import the SSL certificate
         certificate = acm.Certificate.from_certificate_arn(
-            self, "Certificate", cert_arn
+            self, "Certificate",
+            "arn:aws:acm:us-east-1:528757783796:certificate/71eac7f3-f4f4-4a6c-a32b-d6dad41f94e8"
         )
 
         # Target Groups
-        self.blue_target_group = elbv2.ApplicationTargetGroup(
+        self._blue_target_group = elbv2.ApplicationTargetGroup(
             self, "BlueTargetGroup",
             vpc=vpc,
             port=1337,
@@ -44,7 +61,7 @@ class AlbConstruct(Construct):
             )
         )
 
-        self.green_target_group = elbv2.ApplicationTargetGroup(
+        self._green_target_group = elbv2.ApplicationTargetGroup(
             self, "GreenTargetGroup",
             vpc=vpc,
             port=1337,
@@ -58,17 +75,17 @@ class AlbConstruct(Construct):
         )
 
         # HTTPS Listener
-        self.https_listener = self.alb.add_listener(
+        self._https_listener = self._alb.add_listener(
             "HttpsListener",
             port=443,
             protocol=elbv2.ApplicationProtocol.HTTPS,
             certificates=[certificate],
             ssl_policy=elbv2.SslPolicy.RECOMMENDED,
-            default_target_groups=[self.blue_target_group]
+            default_target_groups=[self._blue_target_group]
         )
 
         # HTTP Listener (redirects to HTTPS)
-        self.http_listener = self.alb.add_listener(
+        self._http_listener = self._alb.add_listener(
             "HttpListener",
             port=80,
             default_action=elbv2.ListenerAction.redirect(
@@ -78,19 +95,22 @@ class AlbConstruct(Construct):
             )
         )
 
-        # DNS configuration
-        hosted_zone = route53.HostedZone.from_hosted_zone_attributes(
-            self, "ExistingHostedZone",
-            hosted_zone_id=hosted_zone_id,
-            zone_name=zone_name
-        )
+    @property
+    def alb(self) -> elbv2.IApplicationLoadBalancer:
+        return self._alb
 
-        # Create an A record pointing to the ALB
-        route53.ARecord(
-            self, "ApiDnsRecord",
-            zone=hosted_zone,
-            record_name="api",  # This will create api.nightly.savvasoutlier.com
-            target=route53.RecordTarget.from_alias(
-                targets.LoadBalancerTarget(self.alb)
-            )
-        )
+    @property
+    def blue_target_group(self) -> elbv2.IApplicationTargetGroup:
+        return self._blue_target_group
+
+    @property
+    def green_target_group(self) -> elbv2.IApplicationTargetGroup:
+        return self._green_target_group
+
+    @property
+    def https_listener(self) -> elbv2.IApplicationListener:
+        return self._https_listener
+
+    @property
+    def http_listener(self) -> elbv2.IApplicationListener:
+        return self._http_listener
