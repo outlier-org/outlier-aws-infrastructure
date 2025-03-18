@@ -4,7 +4,7 @@ from aws_cdk import (aws_ec2 as ec2)
 
 from custom_constructs.network_construct_new import NetworkConstruct
 from custom_constructs.ecr_construct_new import EcrConstruct
-from custom_constructs.load_balancer_construct_new import LoadBalancerConstruct
+from custom_constructs.alb_construct_new import AlbConstruct
 from custom_constructs.ecs_construct_new import EcsConstruct
 from custom_constructs.pipeline_construct_new import PipelineConstruct
 
