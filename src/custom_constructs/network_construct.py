@@ -18,7 +18,7 @@ class NetworkConstruct(BaseConstruct):
     def create_security_groups(self):
         """Create all application security groups"""
         # ALB Security Group
-        alb_name = f"outlier-alb-{self.environment}-sg-1234"
+        alb_name = f"outlier-alb-{self.environment}-sg-test"
         self.alb_sg = ec2.SecurityGroup(
             self,
             "AlbSecurityGroup",
@@ -29,7 +29,7 @@ class NetworkConstruct(BaseConstruct):
         )
 
         # Service Security Group
-        service_name = f"outlier-service-{self.environment}-sg-1234v"
+        service_name = f"outlier-service-{self.environment}-sg-test"
         self.service_sg = ec2.SecurityGroup(
             self,
             "ServiceSecurityGroup",
@@ -48,7 +48,7 @@ class NetworkConstruct(BaseConstruct):
         )
 
         # Secrets Manager Endpoint Security Group
-        secrets_name = f"secrets-manager-to-ecs-sg-{self.environment}-1234v"
+        secrets_name = f"secrets-manager-to-ecs-sg-{self.environment}-test"
         self.secrets_sg = ec2.SecurityGroup(
             self,
             "SecretsManagerSecurityGroup",
@@ -119,7 +119,7 @@ class NetworkConstruct(BaseConstruct):
 
         for name, service in interface_endpoints:
             self.vpc.add_interface_endpoint(
-                f"{name}Endpoint",
+                f"{name}Endpoint-test",
                 service=service,
                 security_groups=[self.service_sg],
                 subnets=ec2.SubnetSelection(
