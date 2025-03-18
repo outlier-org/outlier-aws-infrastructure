@@ -55,14 +55,14 @@ class DevApplicationStack(cdk.Stack):
             blue_target_group=alb.blue_target_group,
             desired_count=0,
             cluster_name="outlier-dev",
-            container_name="Outlier-Service-Container-dev",
-            log_group_name="/ecs/Outlier-Service-dev"
+            container_name="Outlier-Service-Container-nightly-dev",
+            log_group_name="/ecs/Outlier-Service-nightly-dev"
         )
 
         # CI/CD Pipeline
         pipeline = PipelineConstructNew(
             self,
-            "Pipeline-Dev",  # resource-dev pattern
+            "Pipeline-Dev",
             service=ecs.service,
             https_listener=alb.https_listener,
             http_listener=alb.http_listener,
@@ -71,12 +71,13 @@ class DevApplicationStack(cdk.Stack):
             application_name="outlier-dev",
             deployment_group_name="outlier-dev",
             pipeline_name="outlier-dev",
-            source_branch="staging",
+            source_branch="cdk-dev-application-changes",
             repository_uri=f"{self.account}.dkr.ecr.{self.region}.amazonaws.com/outlier-ecr-dev",
             service_name="outlier-service-dev",
             buildspec_filename="buildspec_nightly.yml",
-            appspec_filename="appspec_nightly.yaml",
-            taskdef_filename="taskdef_nightly.json"
+            appspec_filename="appspec_nightly_dev.yaml",
+            taskdef_filename="taskdef_nightly_dev.json",
+            environment_value="DEV"  # Override the default value
         )
 
         # Outputs

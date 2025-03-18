@@ -34,6 +34,7 @@ class PipelineConstructNew(BaseConstruct):
             buildspec_filename: str = "buildspec_nightly.yml",
             appspec_filename: str = "appspec_nightly.yaml",
             taskdef_filename: str = "taskdef_nightly.json",
+            environment_value: str = None,  # New parameter
             **kwargs
     ) -> None:
         super().__init__(scope, id, **kwargs)
@@ -48,6 +49,7 @@ class PipelineConstructNew(BaseConstruct):
         self.buildspec_filename = buildspec_filename
         self.appspec_filename = appspec_filename
         self.taskdef_filename = taskdef_filename
+        self.environment_value = environment_value or self.environment.upper()
 
         # CodeDeploy Setup - identical to original but parameterized
         codedeploy_app = codedeploy.EcsApplication(
@@ -76,7 +78,7 @@ class PipelineConstructNew(BaseConstruct):
             auto_delete_objects=True
         )
 
-        # Build project - identical to original but parameterized
+        # Build project - with updated environment variable
         build_project = codebuild.PipelineProject(
             self, "BuildProject",
             environment=codebuild.BuildEnvironment(
@@ -91,7 +93,7 @@ class PipelineConstructNew(BaseConstruct):
                     value=self.service_name
                 ),
                 "ENVIRONMENT": codebuild.BuildEnvironmentVariable(
-                    value=self.environment.upper()
+                    value=self.environment_value  # Use the custom or default value
                 )
             },
             build_spec=codebuild.BuildSpec.from_source_filename(self.buildspec_filename)
