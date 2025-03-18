@@ -74,7 +74,7 @@ class DevApplicationStack(cdk.Stack):
             http_listener=alb.http_listener,
             blue_target_group=alb.blue_target_group,
             green_target_group=alb.green_target_group,
-            application_name=f"outlier-{self.sub_environment}",
+            application_name=f"outlier-nightly-{self.sub_environment}",
             deployment_group_name=f"outlier-{self.sub_environment}",
             pipeline_name=f"outlier-{self.sub_environment}",
             source_branch="cdk-dev-application-changes",
