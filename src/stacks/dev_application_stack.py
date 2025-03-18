@@ -34,7 +34,7 @@ class DevApplicationStack(cdk.Stack):
             vpc=network.vpc,
             security_group=network.alb_security_group,
             load_balancer_name="outlier-dev",
-            subdomain="api.dev"
+            subdomain="api-dev"
         )
 
         # Create and associate WAF
@@ -81,4 +81,4 @@ class DevApplicationStack(cdk.Stack):
         )
 
         # Outputs
-        cdk.CfnOutput(self, "ALBDnsName-Dev", value=alb.alb.load_balancer_dns_name)
+        # cdk.CfnOutput(self, "ALBDnsName-Dev", value=alb.alb.load_balancer_dns_name)
