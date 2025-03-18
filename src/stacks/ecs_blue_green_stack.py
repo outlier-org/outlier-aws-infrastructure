@@ -56,10 +56,6 @@ class EcsBlueGreenStack(cdk.Stack):
             ec2.Peer.any_ipv4(), ec2.Port.tcp(80),
             "Allow HTTP from anywhere"
         )
-        self.alb_security_group.add_ingress_rule(
-            ec2.Peer.ipv4(self.vpc.vpc_cidr_block), ec2.Port.tcp(8080),
-            "Allow test traffic from within VPC"
-        )
 
         self.service_security_group = ec2.SecurityGroup(
             self, "ServiceSecurityGroup-BlueGreen",
