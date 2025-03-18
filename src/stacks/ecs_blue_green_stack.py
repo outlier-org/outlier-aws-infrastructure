@@ -77,6 +77,21 @@ class EcsBlueGreenStack(cdk.Stack):
             description="Allow PostgreSQL from ECS service"
         )
 
+        # ECR repository
+        self.ecr_repository = ecr.Repository(
+            self, "OutlierEcrRepo",
+            repository_name="outlier-ecr-nightly",
+            removal_policy=cdk.RemovalPolicy.DESTROY,
+            lifecycle_rules=[
+                ecr.LifecycleRule(
+                    description="Keep only the last 10 images",
+                    max_image_count=10,  # Keep only the last 10 images
+                    rule_priority=1,
+                    tag_status=ecr.TagStatus.ANY
+                )
+            ]
+        )
+
         # Load Balancer
         self.alb = elbv2.ApplicationLoadBalancer(
             self, "BlueGreenALB",
@@ -168,9 +183,7 @@ class EcsBlueGreenStack(cdk.Stack):
         app_container = task_definition.add_container(
             "Outlier-Service-Container-nightly",
             image=ecs.ContainerImage.from_ecr_repository(
-                ecr.Repository.from_repository_name(
-                    self, "OutlierEcrRepo", "outlier-ecr"
-                ),
+                self.ecr_repository,
                 tag="latest"
             ),
         )
@@ -231,7 +244,7 @@ class EcsBlueGreenStack(cdk.Stack):
             ),
             environment_variables={
                 "REPOSITORY_URI": codebuild.BuildEnvironmentVariable(
-                    value=f"{self.account}.dkr.ecr.{self.region}.amazonaws.com/outlier-ecr"
+                    value=f"{self.account}.dkr.ecr.{self.region}.amazonaws.com/outlier-ecr-nightly"
                 ),
                 "SERVICE_NAME": codebuild.BuildEnvironmentVariable(
                     value="outlier-service-nightly"
