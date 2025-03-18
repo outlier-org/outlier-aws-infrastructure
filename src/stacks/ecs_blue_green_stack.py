@@ -1,3 +1,4 @@
+# file: src/stacks/ecs_blue_green_stack.py
 import aws_cdk as cdk
 from constructs import Construct
 from aws_cdk import (
@@ -12,6 +13,9 @@ from aws_cdk import (
     aws_codepipeline_actions as codepipeline_actions,
     aws_logs as logs,
     aws_s3 as s3,
+    aws_route53 as route53,
+    aws_route53_targets as targets,
+    aws_certificatemanager as acm,
     Duration,
 )
 
@@ -33,6 +37,7 @@ class EcsBlueGreenStack(cdk.Stack):
             allow_all_outbound=True
         )
 
+        # Log Group for ECS
         ecs_logs = logs.LogGroup(
             self,
             "EcsLogGroup",
@@ -101,6 +106,29 @@ class EcsBlueGreenStack(cdk.Stack):
             load_balancer_name="outlier-blue-green"
         )
 
+        # Import the hosted zone
+        hosted_zone = route53.HostedZone.from_hosted_zone_attributes(
+            self, "ExistingHostedZone",
+            hosted_zone_id="Z05574991AFW5NGZ1X8DH",  # Replace with your hosted zone ID
+            zone_name="nightly.savvasoutlier.com"  # Replace with your domain name
+        )
+
+        # Create an A record pointing to the ALB
+        route53.ARecord(
+            self, "ApiDnsRecord",
+            zone=hosted_zone,
+            record_name="api",  # This will create api.nightly.savvasoutlier.com
+            target=route53.RecordTarget.from_alias(
+                targets.LoadBalancerTarget(self.alb)
+            )
+        )
+
+        # Import the SSL certificate
+        certificate = acm.Certificate.from_certificate_arn(
+            self, "Certificate",
+            "arn:aws:acm:us-east-1:528757783796:certificate/71eac7f3-f4f4-4a6c-a32b-d6dad41f94e8"  # Replace with your certificate ARN
+        )
+
         # Target Groups
         self.blue_target_group = elbv2.ApplicationTargetGroup(
             self, "BlueTargetGroup",
@@ -128,14 +156,25 @@ class EcsBlueGreenStack(cdk.Stack):
             )
         )
 
-        # Listeners
-        self.prod_listener = self.alb.add_listener(
-            "ProdListener", port=80,
+        # HTTPS Listener
+        self.https_listener = self.alb.add_listener(
+            "HttpsListener",
+            port=443,
+            protocol=elbv2.ApplicationProtocol.HTTPS,
+            certificates=[certificate],
+            ssl_policy=elbv2.SslPolicy.RECOMMENDED,
             default_target_groups=[self.blue_target_group]
         )
-        self.test_listener = self.alb.add_listener(
-            "TestListener", port=8080,
-            default_target_groups=[self.green_target_group]
+
+        # HTTP Listener (redirects to HTTPS)
+        self.http_listener = self.alb.add_listener(
+            "HttpListener",
+            port=80,
+            default_action=elbv2.ListenerAction.redirect(
+                port="443",
+                protocol="HTTPS",
+                permanent=True
+            )
         )
 
         # ECS Cluster
@@ -221,8 +260,8 @@ class EcsBlueGreenStack(cdk.Stack):
             service=self.service,
             deployment_group_name="outlier-blue-green",
             blue_green_deployment_config=codedeploy.EcsBlueGreenDeploymentConfig(
-                listener=self.prod_listener,
-                test_listener=self.test_listener,
+                listener=self.https_listener,
+                test_listener=self.http_listener,
                 blue_target_group=self.blue_target_group,
                 green_target_group=self.green_target_group,
                 termination_wait_time=Duration.minutes(1)

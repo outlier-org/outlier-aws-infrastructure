@@ -41,7 +41,7 @@ class AlbConstruct(BaseConstruct):
             self,
             "ApiDnsRecord",
             zone=hosted_zone,
-            record_name="api",  # This will create api.nightly.savvasoutlier.com
+            record_name="api2",  # This will create api.nightly.savvasoutlier.com
             target=route53.RecordTarget.from_alias(
                 targets.LoadBalancerTarget(self._alb)
             )
