@@ -2,11 +2,11 @@ import aws_cdk as cdk
 from constructs import Construct
 from aws_cdk import aws_ec2 as ec2
 
-from src.custom_constructs.network_construct_new import NetworkConstructNew
-from src.custom_constructs.ecr_construct_new import EcrConstructNew
-from src.custom_constructs.alb_construct_new import AlbConstructNew
-from src.custom_constructs.ecs_construct_new import EcsConstructNew
-from src.custom_constructs.pipeline_construct_new import PipelineConstructNew
+from custom_constructs.network_construct_new import NetworkConstructNew
+from custom_constructs.ecr_construct_new import EcrConstructNew
+from custom_constructs.alb_construct_new import AlbConstructNew
+from custom_constructs.ecs_construct_new import EcsConstructNew
+from custom_constructs.pipeline_construct_new import PipelineConstructNew
 
 
 class EcsBlueGreenStack(cdk.Stack):
