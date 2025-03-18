@@ -19,7 +19,7 @@ GitHubOIDCStack(app, f"GitHubOIDCStack-{environment}", env=aws_environment)
 # Create a base stack which contains all of our main resources
 BaseStack(app, f"BaseStack-{environment}", env=aws_environment)
 
-DevApplicationStack(app, f"BaseStack-{environment}", env=aws_environment)
+DevApplicationStack(app, f"DevApplicationStack-{environment}", env=aws_environment)
 
 EcsBlueGreenStack(app, f"EcsBlueGreenStack-{environment}", env=aws_environment)
 
