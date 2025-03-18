@@ -49,7 +49,7 @@ class NetworkConstructNew(BaseConstruct):
             self,
             "ServiceSecurityGroup",
             vpc=self._vpc,
-            security_group_name=f"outlier-service-{self.environment}{self.sub_environment}--sg",
+            security_group_name=f"outlier-service-{self.environment}{self.sub_environment}-sg",
             description=f"Security group for {self.environment}{self.sub_environment} ECS Service",
             allow_all_outbound=True,
         )
