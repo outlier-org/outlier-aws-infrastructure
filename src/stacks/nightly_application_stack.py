@@ -18,15 +18,11 @@ class NightlyApplicationStack(cdk.Stack):
 
         # Network resources
         network = NetworkConstruct(
-            self,
-            "Network",
-            create_endpoints=False,
-            create_security_groups=True
+            self, "Network", create_endpoints=False, create_security_groups=True
         )
 
         # Storage resources (S3 buckets)
         storage = StorageConstruct(self, "StorageConstruct")
-
 
         # # Add the database construct - using the existing RDS security group
         database = DatabaseConstruct(
@@ -85,7 +81,7 @@ class NightlyApplicationStack(cdk.Stack):
             application_name="outlier-nightly",
             deployment_group_name="outlier",
             pipeline_name="outlier-nightly",
-            source_branch="cdk-dev-application-changes",
+            source_branch="staging",
             repository_uri=ecr.repository.repository_uri,
             service_name="outlier-service",
             buildspec_filename="buildspec_nightly.yml",
