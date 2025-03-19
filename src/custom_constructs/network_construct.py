@@ -32,7 +32,7 @@ class NetworkConstruct(BaseConstruct):
         )
 
         # ALB Security Group
-        alb_name = f"outlier-alb-{self.environment}{self.sub_environment}-sg"
+        alb_name = f"outlier-alb-{self.environment}{self.sub_environment}-sg-new"
         self.alb_sg = ec2.SecurityGroup(
             self,
             "AlbSecurityGroup",
@@ -55,7 +55,7 @@ class NetworkConstruct(BaseConstruct):
         )
 
         # Service Security Group
-        service_name = f"outlier-service-{self.environment}{self.sub_environment}-sg"
+        service_name = f"outlier-service-{self.environment}{self.sub_environment}-sg-new"
         self.service_sg = ec2.SecurityGroup(
             self,
             "ServiceSecurityGroup",
