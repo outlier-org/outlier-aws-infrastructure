@@ -76,7 +76,7 @@ class NightlyApplicationStack(cdk.Stack):
             buildspec_filename="buildspec_nightly.yml",
             appspec_filename="appspec_nightly.yaml",
             taskdef_filename="taskdef_nightly.json",
-            environment_value=self.environment.upper(),
+            environment_value="NIGHTLY",
         )
 
         # Outputs
