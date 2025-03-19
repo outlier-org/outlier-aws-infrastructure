@@ -69,7 +69,7 @@ class NightlyApplicationStack(cdk.Stack):
             green_target_group=alb.green_target_group,
             application_name="outlier-nightly",
             deployment_group_name="outlier",
-            pipeline_name="outlier",
+            pipeline_name="outlier-nightly",
             source_branch="staging",
             repository_uri=ecr.repository.repository_uri,
             service_name="outlier-service",
