@@ -6,14 +6,14 @@ from .base_construct import BaseConstruct
 
 class EcrConstruct(BaseConstruct):
     def __init__(
-        self, scope: Construct, id: str, repository_name: str, **kwargs
+        self, scope: Construct, id: str, sub_environment: str = "", **kwargs
     ) -> None:
         super().__init__(scope, id, **kwargs)
 
         self._repository = ecr.Repository(
             self,
             "EcrRepo",
-            repository_name=repository_name,
+            repository_name=f"outlier-ecr-{self.environment}{sub_environment}",
             removal_policy=cdk.RemovalPolicy.DESTROY,
             lifecycle_rules=[
                 ecr.LifecycleRule(

@@ -12,7 +12,6 @@ class NetworkConstruct(BaseConstruct):
             self, "ExistingVPC", vpc_id="vpc-00059e30c80aa84f2"
         )
 
-        self.create_security_groups()
         self.create_vpc_endpoints()
 
     def create_security_groups(self):

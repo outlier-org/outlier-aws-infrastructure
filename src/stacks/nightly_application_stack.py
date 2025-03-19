@@ -10,81 +10,72 @@ from custom_constructs.pipeline_construct import PipelineConstruct
 from custom_constructs.waf_construct import WafConstruct
 
 
-class DevApplicationStack(cdk.Stack):
+class NightlyApplicationStack(cdk.Stack):
     def __init__(self, scope: Construct, id: str, **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
-
-        sub_environment = "dev"
-        self.sub_environment = sub_environment
-
-        # Tag all resources in the stack
-        cdk.Tags.of(self).add("SubEnvironment", self.sub_environment)
 
         # Network resources
         network = NetworkConstructNew(
             self,
-            f"Network-{self.sub_environment}",
-            sub_environment=f"-{self.sub_environment}",
+            "Network",
         )
 
         # ECR Repository
         ecr = EcrConstruct(
             self,
             "ECR",
-            sub_environment=f"-{self.sub_environment}",
         )
 
         # Load Balancer and DNS
         alb = AlbConstruct(
             self,
-            f"LoadBalancer-{self.sub_environment}",
+            "LoadBalancer",
             vpc=network.vpc,
             security_group=network.alb_security_group,
-            load_balancer_name=f"outlier-{self.sub_environment}",
-            subdomain=f"api-{self.sub_environment}",
+            load_balancer_name="outlier-nightly",
+            subdomain="api6",
         )
 
         # Create and associate WAF
         waf = WafConstruct(
             self,
-            f"WAF-{self.sub_environment}",
+            "WAF",
             alb=alb.alb,
-            sub_environment=f"-{self.sub_environment}",
         )
 
         # ECS Cluster, Service and Task Definition
         ecs = EcsConstruct(
             self,
-            f"ECS-{self.sub_environment}",
+            "ECS",
             vpc=network.vpc,
             security_group=network.service_security_group,
             ecr_repository=ecr.repository,
             blue_target_group=alb.blue_target_group,
             desired_count=0,
-            cluster_name=f"outlier-service-nightly-{self.sub_environment}",
-            container_name=f"Outlier-Service-Container-nightly-{self.sub_environment}",
-            log_group_name=f"/ecs/Outlier-Service-nightly-{self.sub_environment}",
+            cluster_name="outlier-service-nightly",
+            container_name="Outlier-Service-Container-nightly",
+            log_group_name="/ecs/Outlier-Service-nightly",
         )
 
         # CI/CD Pipeline
         pipeline = PipelineConstruct(
             self,
-            f"Pipeline-{self.sub_environment}",
+            "Pipeline",
             service=ecs.service,
             https_listener=alb.https_listener,
             http_listener=alb.http_listener,
             blue_target_group=alb.blue_target_group,
             green_target_group=alb.green_target_group,
-            application_name=f"outlier-nightly-{self.sub_environment}",
-            deployment_group_name=f"outlier-{self.sub_environment}",
-            pipeline_name=f"outlier-{self.sub_environment}",
+            application_name="outlier-nightly",
+            deployment_group_name="outlier",
+            pipeline_name="outlier",
             source_branch="cdk-dev-application-changes",
             repository_uri=ecr.repository.repository_uri,
-            service_name=f"outlier-service-{self.sub_environment}",
+            service_name="outlier-service",
             buildspec_filename="buildspec_nightly.yml",
-            appspec_filename=f"appspec_nightly_{self.sub_environment}.yaml",
-            taskdef_filename=f"taskdef_nightly_{self.sub_environment}.json",
-            environment_value=self.sub_environment.upper(),
+            appspec_filename="appspec_nightly.yaml",
+            taskdef_filename="taskdef_nightly.json",
+            environment_value=self.environment.upper(),
         )
 
         # Outputs

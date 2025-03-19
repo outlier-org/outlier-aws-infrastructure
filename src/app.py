@@ -5,6 +5,7 @@ from stacks.base_stack import BaseStack
 from stacks.ecs_blue_green_stack import EcsBlueGreenStack
 from stacks.dev_application_stack import DevApplicationStack
 from stacks.github_oidc_stack import GitHubOIDCStack
+from stacks.nightly_application_stack import NightlyApplicationStack
 
 # Inherit environment variables from npm run commands (displayed in .projen/tasks.json)
 environment = os.environ.get("ENVIRONMENT", "nightly")
@@ -18,8 +19,10 @@ app = cdk.App()
 # Add GitHub OpenID Connect support and create an IAM role for GitHub
 GitHubOIDCStack(app, f"GitHubOIDCStack-{environment}", env=aws_environment)
 
-# Create a base stack which contains all of our main resources
+# Create a base stack which contains all of our global, shared resources
 BaseStack(app, f"BaseStack-{environment}", env=aws_environment)
+
+NightlyApplicationStack(app, f"NightlyApplicationStack-{environment}", env=aws_environment)
 
 DevApplicationStack(app, f"DevApplicationStack-{environment}", env=aws_environment)
 
