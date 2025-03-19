@@ -62,7 +62,7 @@ class DevApplicationStack(cdk.Stack):
             security_group=network.service_security_group,
             ecr_repository=ecr.repository,
             blue_target_group=alb.blue_target_group,
-            desired_count=0,
+            desired_count=1,
             cluster_name=f"outlier-service-nightly-{self.sub_environment}",
             container_name=f"Outlier-Service-Container-nightly-{self.sub_environment}",
             log_group_name=f"/ecs/Outlier-Service-nightly-{self.sub_environment}",
