@@ -6,8 +6,9 @@ from custom_constructs.network_construct import NetworkConstruct
 from custom_constructs.ecr_construct import EcrConstruct
 from custom_constructs.alb_construct import AlbConstruct
 from custom_constructs.ecs_construct import EcsConstruct
-from custom_constructs.pipeline_construct import PipelineConstruct
+from custom_constructs.pipeline_construct_new import PipelineConstructNew
 from custom_constructs.waf_construct import WafConstruct
+from custom_constructs.storage_construct import StorageConstruct
 
 
 class NightlyApplicationStack(cdk.Stack):
@@ -19,7 +20,20 @@ class NightlyApplicationStack(cdk.Stack):
             self,
             "Network",
             create_endpoints=False,
-            create_security_groups=True        )
+            create_security_groups=True
+        )
+
+        # Storage resources (S3 buckets)
+        storage = StorageConstruct(self, "StorageConstruct")
+
+
+        # # Add the database construct - using the existing RDS security group
+        # database = DatabaseConstruct(
+        #     self,
+        #     "DatabaseConstruct",
+        #     vpc=network.vpc,
+        #     security_group=network.rds_security_group,
+        # )
 
         # ECR Repository
         ecr = EcrConstruct(
@@ -59,7 +73,7 @@ class NightlyApplicationStack(cdk.Stack):
         )
 
         # CI/CD Pipeline
-        pipeline = PipelineConstruct(
+        pipeline = PipelineConstructNew(
             self,
             "Pipeline",
             service=ecs.service,
@@ -70,7 +84,7 @@ class NightlyApplicationStack(cdk.Stack):
             application_name="outlier-nightly",
             deployment_group_name="outlier",
             pipeline_name="outlier-nightly",
-            source_branch="staging",
+            source_branch="cdk-dev-application-changes",
             repository_uri=ecr.repository.repository_uri,
             service_name="outlier-service",
             buildspec_filename="buildspec_nightly.yml",

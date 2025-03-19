@@ -9,6 +9,8 @@ from custom_constructs.ecs_construct import EcsConstruct
 from custom_constructs.pipeline_construct_new import PipelineConstructNew
 from custom_constructs.waf_construct import WafConstruct
 
+from src.custom_constructs.storage_construct import StorageConstruct
+
 
 class DevApplicationStack(cdk.Stack):
     def __init__(self, scope: Construct, id: str, **kwargs) -> None:
@@ -28,6 +30,22 @@ class DevApplicationStack(cdk.Stack):
             create_endpoints=False,
             create_security_groups=True
         )
+
+        # Storage resources (S3 buckets)
+        storage = StorageConstruct(
+            self,
+            "StorageConstruct",
+            sub_environment=f"-{self.sub_environment}",
+        )
+
+
+        # # Add the database construct - using the existing RDS security group
+        # database = DatabaseConstruct(
+        #     self,
+        #     "DatabaseConstruct",
+        #     vpc=network.vpc,
+        #     security_group=network.rds_security_group,
+        # )
 
         # ECR Repository
         ecr = EcrConstruct(
