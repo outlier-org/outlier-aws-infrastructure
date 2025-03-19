@@ -33,7 +33,7 @@ class NightlyApplicationStack(cdk.Stack):
             vpc=network.vpc,
             security_group=network.alb_security_group,
             load_balancer_name="outlier-nightly",
-            subdomain="api6",
+            subdomain="api",
         )
 
         # Create and associate WAF
