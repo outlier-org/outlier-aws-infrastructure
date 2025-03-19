@@ -78,16 +78,12 @@ class PipelineConstruct(BaseConstruct):
                 "REPOSITORY_URI": codebuild.BuildEnvironmentVariable(
                     value=repository_uri
                 ),
-                "SERVICE_NAME": codebuild.BuildEnvironmentVariable(
-                    value=service_name
-                ),
+                "SERVICE_NAME": codebuild.BuildEnvironmentVariable(value=service_name),
                 "ENVIRONMENT": codebuild.BuildEnvironmentVariable(
                     value=environment_value
                 ),
             },
-            build_spec=codebuild.BuildSpec.from_source_filename(
-                buildspec_filename
-            ),
+            build_spec=codebuild.BuildSpec.from_source_filename(buildspec_filename),
         )
 
         # Same policies as original

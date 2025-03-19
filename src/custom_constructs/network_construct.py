@@ -1,3 +1,4 @@
+# src/custom_constructs/network_construct.py
 from aws_cdk import aws_ec2 as ec2
 import aws_cdk as cdk
 from constructs import Construct
@@ -5,62 +6,43 @@ from .base_construct import BaseConstruct
 
 
 class NetworkConstruct(BaseConstruct):
-    def __init__(self, scope: Construct, id: str):
+    def __init__(
+        self,
+        scope: Construct,
+        id: str,
+        sub_environment: str = "",
+        create_endpoints: bool = True,
+    ):
         super().__init__(scope, id)
 
+        # Store parameters
+        self.sub_environment = sub_environment
+
+        # Existing VPC
         self.vpc = ec2.Vpc.from_lookup(
             self, "ExistingVPC", vpc_id="vpc-00059e30c80aa84f2"
-        )
-
-        self.create_security_groups()
-        self.create_vpc_endpoints()
-
-    def create_security_groups(self):
-        """Create all application security groups"""
-        # ALB Security Group
-        alb_name = f"outlier-alb-{self.environment}-sg-test"
-        self.alb_sg = ec2.SecurityGroup(
-            self,
-            "AlbSecurityGroup",
-            vpc=self.vpc,
-            security_group_name=alb_name,
-            description=f"Security group for Outlier ALB - {self.environment}",
-            allow_all_outbound=True,
-        )
-
-        # Service Security Group
-        service_name = f"outlier-service-{self.environment}-sg-test"
-        self.service_sg = ec2.SecurityGroup(
-            self,
-            "ServiceSecurityGroup",
-            vpc=self.vpc,
-            security_group_name=service_name,
-            description=f"Security group for Outlier Services - {self.environment}",
-            allow_all_outbound=True,
         )
 
         # Import existing RDS Security Group
         self.rds_sg = ec2.SecurityGroup.from_security_group_id(
             self,
             "ExistingRdsSecurityGroup",
-            "sg-05fcdaf33c1d2a016",  # The actual RDS security group ID from AWS
+            "sg-05fcdaf33c1d2a016",
             allow_all_outbound=True,
         )
 
-        # Secrets Manager Endpoint Security Group
-        secrets_name = f"secrets-manager-to-ecs-sg-{self.environment}-test"
-        self.secrets_sg = ec2.SecurityGroup(
+        # ALB Security Group
+        alb_name = f"outlier-alb-{self.environment}{self.sub_environment}-sg"
+        self.alb_sg = ec2.SecurityGroup(
             self,
-            "SecretsManagerSecurityGroup",
+            "AlbSecurityGroup",
             vpc=self.vpc,
-            security_group_name=secrets_name,
-            description=f"Security group for Secrets Manager VPC Endpoint - {self.environment}",
+            security_group_name=alb_name,
+            description=f"Security group for {self.environment}{self.sub_environment} ALB",
             allow_all_outbound=True,
         )
 
-        # Add ingress rules
-
-        # ALB rules
+        # Allow HTTP and HTTPS from anywhere
         self.alb_sg.add_ingress_rule(
             peer=ec2.Peer.any_ipv4(),
             connection=ec2.Port.tcp(80),
@@ -72,43 +54,65 @@ class NetworkConstruct(BaseConstruct):
             description="Allow HTTPS from anywhere",
         )
 
-        # Service rules
+        # Service Security Group
+        service_name = f"outlier-service-{self.environment}{self.sub_environment}-sg"
+        self.service_sg = ec2.SecurityGroup(
+            self,
+            "ServiceSecurityGroup",
+            vpc=self.vpc,
+            security_group_name=service_name,
+            description=f"Security group for {self.environment}{self.sub_environment} ECS Services",
+            allow_all_outbound=True,
+        )
+
+        # Allow from ALB
         self.service_sg.add_ingress_rule(
-            peer=ec2.Peer.security_group_id(self.alb_sg.security_group_id),
+            peer=self.alb_sg,
             connection=ec2.Port.tcp(1337),
             description="Allow inbound from ALB",
         )
 
-        # RDS rules
+        # Add RDS ingress rule
         self.rds_sg.add_ingress_rule(
             peer=ec2.Peer.security_group_id(self.service_sg.security_group_id),
             connection=ec2.Port.tcp(5432),
-            description="Allow PostgreSQL from ECS service",
-        )
-        # Add ingress from admin EC2
-        self.rds_sg.add_ingress_rule(
-            peer=ec2.Peer.security_group_id("sg-0ce94b9da62545a35"),
-            connection=ec2.Port.tcp(5432),
-            description="Allow PostgreSQL from nightly admin EC2",
+            description=f"Allow PostgreSQL from {self.environment}{self.sub_environment} ECS service",
         )
 
-        # Secrets Manager rules
-        self.secrets_sg.add_ingress_rule(
-            peer=ec2.Peer.security_group_id(self.service_sg.security_group_id),
-            connection=ec2.Port.tcp(443),
-            description="Allow HTTPS from ECS service",
-        )
+        # Add admin EC2 ingress to RDS if this is in BaseStack
+        if not sub_environment:
+            self.rds_sg.add_ingress_rule(
+                peer=ec2.Peer.security_group_id("sg-0ce94b9da62545a35"),
+                connection=ec2.Port.tcp(5432),
+                description="Allow PostgreSQL from nightly admin EC2",
+            )
 
-        # Add standard tags using the variables we stored
-        sg_names = {
-            self.alb_sg: alb_name,
-            self.service_sg: service_name,
-            self.secrets_sg: secrets_name,
-        }
+        # Create Secrets Manager Endpoint Security Group and VPC endpoints if needed
+        if create_endpoints:
+            secrets_name = (
+                f"secrets-manager-to-ecs-sg-{self.environment}{self.sub_environment}"
+            )
+            self.secrets_sg = ec2.SecurityGroup(
+                self,
+                "SecretsManagerSecurityGroup",
+                vpc=self.vpc,
+                security_group_name=secrets_name,
+                description=f"Security group for Secrets Manager VPC Endpoint - {self.environment}{self.sub_environment}",
+                allow_all_outbound=True,
+            )
+
+            # Secrets Manager rules
+            self.secrets_sg.add_ingress_rule(
+                peer=ec2.Peer.security_group_id(self.service_sg.security_group_id),
+                connection=ec2.Port.tcp(443),
+                description="Allow HTTPS from ECS service",
+            )
+
+            # Create VPC endpoints
+            self.create_vpc_endpoints()
 
     def create_vpc_endpoints(self):
         """Create VPC Endpoints for AWS services"""
-
         # Interface Endpoints
         interface_endpoints = [
             ("SecretsManager", ec2.InterfaceVpcEndpointAwsService.SECRETS_MANAGER),
@@ -119,7 +123,7 @@ class NetworkConstruct(BaseConstruct):
 
         for name, service in interface_endpoints:
             self.vpc.add_interface_endpoint(
-                f"{name}Endpoint-test",
+                f"{name}Endpoint",
                 service=service,
                 security_groups=[self.service_sg],
                 subnets=ec2.SubnetSelection(
@@ -128,6 +132,7 @@ class NetworkConstruct(BaseConstruct):
                 private_dns_enabled=True,
             )
 
+    # Support both property naming styles
     @property
     def alb_security_group(self) -> ec2.ISecurityGroup:
         return self.alb_sg
@@ -142,4 +147,9 @@ class NetworkConstruct(BaseConstruct):
 
     @property
     def secrets_manager_security_group(self) -> ec2.ISecurityGroup:
-        return self.secrets_sg
+        if hasattr(self, "secrets_sg"):
+            return self.secrets_sg
+        else:
+            raise AttributeError(
+                "No secrets_sg defined - this construct was created with create_endpoints=False"
+            )

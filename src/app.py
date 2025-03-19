@@ -21,7 +21,9 @@ GitHubOIDCStack(app, f"GitHubOIDCStack-{environment}", env=aws_environment)
 # Create a base stack which contains all of our global, shared resources
 BaseStack(app, f"BaseStack-{environment}", env=aws_environment)
 
-NightlyApplicationStack(app, f"NightlyApplicationStack-{environment}", env=aws_environment)
+NightlyApplicationStack(
+    app, f"NightlyApplicationStack-{environment}", env=aws_environment
+)
 
 DevApplicationStack(app, f"DevApplicationStack-{environment}", env=aws_environment)
 
