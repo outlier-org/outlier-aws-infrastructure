@@ -2,7 +2,6 @@ import os
 
 import aws_cdk as cdk
 from stacks.base_stack import BaseStack
-from stacks.ecs_blue_green_stack import EcsBlueGreenStack
 from stacks.dev_application_stack import DevApplicationStack
 from stacks.github_oidc_stack import GitHubOIDCStack
 from stacks.nightly_application_stack import NightlyApplicationStack
@@ -26,7 +25,6 @@ NightlyApplicationStack(app, f"NightlyApplicationStack-{environment}", env=aws_e
 
 DevApplicationStack(app, f"DevApplicationStack-{environment}", env=aws_environment)
 
-EcsBlueGreenStack(app, f"EcsBlueGreenStack-{environment}", env=aws_environment)
 
 # Tag all resources in CloudFormation with the environment name
 cdk.Tags.of(app).add("Environment", environment)
