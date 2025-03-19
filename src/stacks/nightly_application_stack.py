@@ -6,7 +6,7 @@ from custom_constructs.network_construct import NetworkConstruct
 from custom_constructs.ecr_construct import EcrConstruct
 from custom_constructs.alb_construct import AlbConstruct
 from custom_constructs.ecs_construct import EcsConstruct
-from custom_constructs.pipeline_construct import PipelineConstruct
+from custom_constructs.pipeline_construct_old import PipelineConstructOld
 from custom_constructs.waf_construct import WafConstruct
 from custom_constructs.storage_construct import StorageConstruct
 from custom_constructs.database_construct import DatabaseConstruct
@@ -70,7 +70,7 @@ class NightlyApplicationStack(cdk.Stack):
         )
 
         # CI/CD Pipeline
-        pipeline = PipelineConstruct(
+        pipeline = PipelineConstructOld(
             self,
             "Pipeline",
             service=ecs.service,
