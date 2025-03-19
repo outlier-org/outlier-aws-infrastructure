@@ -15,7 +15,7 @@ from aws_cdk import (
 from .base_construct import BaseConstruct
 
 
-class PipelineConstructNew(BaseConstruct):
+class PipelineConstruct(BaseConstruct):
     def __init__(
         self,
         scope: Construct,
