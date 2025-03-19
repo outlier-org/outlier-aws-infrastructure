@@ -18,8 +18,8 @@ class NightlyApplicationStack(cdk.Stack):
         network = NetworkConstruct(
             self,
             "Network",
-            create_endpoints=False,  # Don't create duplicate VPC endpoints
-        )
+            create_endpoints=False,
+            create_security_groups=True        )
 
         # ECR Repository
         ecr = EcrConstruct(

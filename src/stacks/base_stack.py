@@ -14,8 +14,12 @@ class BaseStack(cdk.Stack):
 
         # Network resources
         network = NetworkConstruct(
-            self, "NetworkConstruct", create_endpoints=True  # Create VPC endpoints
+            self,
+            "NetworkConstruct",
+            create_endpoints=True,
+            create_security_groups=False
         )
+
         # Storage resources (S3 buckets)
         # storage = StorageConstruct(self, "StorageConstruct")
 

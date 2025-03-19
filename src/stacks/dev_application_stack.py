@@ -23,9 +23,10 @@ class DevApplicationStack(cdk.Stack):
         # Network resources
         network = NetworkConstruct(
             self,
-            f"Network-{self.sub_environment}",
+            "Network",
             sub_environment=f"-{self.sub_environment}",
             create_endpoints=False,
+            create_security_groups=True
         )
 
         # ECR Repository
