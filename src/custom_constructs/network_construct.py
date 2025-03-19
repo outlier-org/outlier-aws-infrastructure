@@ -1,4 +1,3 @@
-# src/custom_constructs/network_construct.py
 from aws_cdk import aws_ec2 as ec2
 import aws_cdk as cdk
 from constructs import Construct
@@ -31,8 +30,8 @@ class NetworkConstruct(BaseConstruct):
             allow_all_outbound=True,
         )
 
-        # ALB Security Group
-        alb_name = f"outlier-alb-{self.environment}{self.sub_environment}-sg-new"
+        # ALB Security Group - NEW NAME WITH v3 SUFFIX
+        alb_name = f"outlier-alb-{self.environment}{self.sub_environment}-sg-v3"
         self.alb_sg = ec2.SecurityGroup(
             self,
             "AlbSecurityGroup",
@@ -54,8 +53,8 @@ class NetworkConstruct(BaseConstruct):
             description="Allow HTTPS from anywhere",
         )
 
-        # Service Security Group
-        service_name = f"outlier-service-{self.environment}{self.sub_environment}-sg-new"
+        # Service Security Group - NEW NAME WITH v3 SUFFIX
+        service_name = f"outlier-service-{self.environment}{self.sub_environment}-sg-v3"
         self.service_sg = ec2.SecurityGroup(
             self,
             "ServiceSecurityGroup",
@@ -89,8 +88,9 @@ class NetworkConstruct(BaseConstruct):
 
         # Create Secrets Manager Endpoint Security Group and VPC endpoints if needed
         if create_endpoints:
+            # ALSO UPDATE SECRETS MANAGER SECURITY GROUP NAME WITH v3 SUFFIX
             secrets_name = (
-                f"secrets-manager-to-ecs-sg-{self.environment}{self.sub_environment}"
+                f"secrets-manager-to-ecs-sg-{self.environment}{self.sub_environment}-v3"
             )
             self.secrets_sg = ec2.SecurityGroup(
                 self,
