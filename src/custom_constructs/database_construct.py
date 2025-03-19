@@ -52,7 +52,7 @@ class DatabaseConstruct(BaseConstruct):
             "NightlyDBCluster",
             engine=rds.DatabaseClusterEngine.aurora_postgres(version=pg_engine_version),
             snapshot_identifier="outlier-nightly-db-cluster-snapshot-03-11",
-            cluster_identifier="outlier-nightly-db-cluster",
+            cluster_identifier="outlier-nightly-db-cluster-cdk",
             writer=rds.ClusterInstance.serverless_v2("writer", scale_with_writer=True),
             readers=[
                 rds.ClusterInstance.serverless_v2(
@@ -62,7 +62,7 @@ class DatabaseConstruct(BaseConstruct):
             serverless_v2_min_capacity=0.5,  # Min 0.5 ACU = ~1GB RAM
             serverless_v2_max_capacity=4,  # Max 4 ACU = ~8GB RAM
             port=5432,
-            instance_identifier_base="outlier-nightly-db",
+            instance_identifier_base="outlier-nightly-db-cdk",
             vpc=vpc,
             vpc_subnets=ec2.SubnetSelection(
                 subnet_type=ec2.SubnetType.PRIVATE_WITH_EGRESS,
