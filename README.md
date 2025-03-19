@@ -102,38 +102,49 @@ This repository contains Outlier's AWS CDK project. It defines infrastructure as
 The project is organized into logical units to facilitate maintainability and scalability:
 
 ```bash
-.
+├── README.md
 ├── cdk.json
 ├── poetry.lock
 ├── pyproject.toml
-├── README.md
 ├── src
-│  ├── __init__.py
-│  ├── app.py
-│  ├── assets
-│  │  ├── ecs
-│  │  │  └── hello-world
-│  │  │     └── Dockerfile
-│  │  └── lambda
-│  │     └── hello-world
-│  │        └── lambda_function.py
-│  ├── bin
-│  │  ├── cicd_helper.py
-│  │  ├── env_helper.py
-│  │  └── git_helper.py
-│  ├── custom_constructs
-│  │  ├── __init__.py
-│  │  ├── base_construct.py
-│  │  ├── network_construct.py
-│  │  └── README.md
-│  └── stacks
-│     ├── __init__.py
-│     ├── base_stack.py
-│     ├── github_oidc_stack.py
-│     └── README.md
+│   ├── __init__.py
+│   ├── app.py
+│   ├── assets
+│   │   ├── ecs
+│   │   │   └── hello-world
+│   │   │       └── Dockerfile
+│   │   └── lambda
+│   │       └── hello-world
+│   │           └── lambda_function.py
+│   ├── bin
+│   │   ├── cicd_helper.py
+│   │   ├── env_helper.py
+│   │   └── git_helper.py
+│   ├── custom_constructs
+│   │   ├── README.md
+│   │   ├── __init__.py
+│   │   ├── alb_construct.py
+│   │   ├── base_construct.py
+│   │   ├── database_construct.py
+│   │   ├── ecr_construct.py
+│   │   ├── ecs_construct.py
+│   │   ├── iam_construct.py
+│   │   ├── network_construct.py
+│   │   ├── pipeline_construct.py
+│   │   ├── storage_construct.py
+│   │   └── waf_construct.py
+│   └── stacks
+│       ├── README.md
+│       ├── __init__.py
+│       ├── base_stack.py
+│       ├── dev_application_stack.py
+│       ├── github_oidc_stack.py
+│       └── nightly_application_stack.py
 └── tests
-   ├── __init__.py
-   └── test_example.py
+    ├── __init__.py
+    └── test_example.py
+
+11 directories, 31 files
 ```
 
 ### Section Details
