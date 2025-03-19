@@ -8,8 +8,7 @@ from custom_constructs.alb_construct import AlbConstruct
 from custom_constructs.ecs_construct import EcsConstruct
 from custom_constructs.pipeline_construct_new import PipelineConstructNew
 from custom_constructs.waf_construct import WafConstruct
-
-from src.custom_constructs.storage_construct import StorageConstruct
+from custom_constructs.storage_construct import StorageConstruct
 
 
 class DevApplicationStack(cdk.Stack):
