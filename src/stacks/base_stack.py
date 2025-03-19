@@ -26,10 +26,10 @@ class BaseStack(cdk.Stack):
         # IAM resources
         iam = IamConstruct(self, "IamConstruct")
 
-        # Add the database construct - using the existing RDS security group
-        database = DatabaseConstruct(
-            self,
-            "DatabaseConstruct",
-            vpc=network.vpc,
-            security_group=network.rds_security_group,
-        )
+        # # Add the database construct - using the existing RDS security group
+        # database = DatabaseConstruct(
+        #     self,
+        #     "DatabaseConstruct",
+        #     vpc=network.vpc,
+        #     security_group=network.rds_security_group,
+        # )
