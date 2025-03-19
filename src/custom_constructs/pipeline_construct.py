@@ -15,7 +15,7 @@ from aws_cdk import (
 from .base_construct import BaseConstruct
 
 
-class PipelineConstruct(BaseConstruct):
+class PipelineConstructNew(BaseConstruct):
     def __init__(
         self,
         scope: Construct,
@@ -139,9 +139,10 @@ class PipelineConstruct(BaseConstruct):
         )
 
         source_output = codepipeline.Artifact()
-        build_output = codepipeline.Artifact()
+        definition_artifact = codepipeline.Artifact("DefinitionArtifact")
+        image_artifact = codepipeline.Artifact("ImageArtifact")
 
-        # Pipeline Source Stage - identical but parameterized branch
+        # Pipeline Source Stage
         pipeline.add_stage(
             stage_name="Source",
             actions=[
@@ -149,14 +150,14 @@ class PipelineConstruct(BaseConstruct):
                     action_name="GitHub",
                     owner="outlier-org",
                     repo="outlier-api",
-                    branch=source_branch,  # Parameterized to "staging"
+                    branch=source_branch,
                     connection_arn="arn:aws:codeconnections:us-east-1:528757783796:connection/ddd91232-5089-40b4-bc84-7ba9e4d1c20f",
                     output=source_output,
                 )
             ],
         )
 
-        # Pipeline Build Stage - identical to original
+        # Build stage using secondary artifacts
         pipeline.add_stage(
             stage_name="Build",
             actions=[
@@ -164,25 +165,23 @@ class PipelineConstruct(BaseConstruct):
                     action_name="Build",
                     project=build_project,
                     input=source_output,
-                    outputs=[build_output],
+                    outputs=[definition_artifact, image_artifact],
                 )
             ],
         )
 
-        # Pipeline Deploy Stage - identical but parameterized filenames
+        # Deploy stage using secondary artifacts
         pipeline.add_stage(
             stage_name="Deploy",
             actions=[
                 codepipeline_actions.CodeDeployEcsDeployAction(
                     action_name="Deploy",
                     deployment_group=self._deployment_group,
-                    app_spec_template_file=build_output.at_path(appspec_filename),
-                    task_definition_template_file=build_output.at_path(
-                        taskdef_filename
-                    ),
+                    app_spec_template_file=definition_artifact.at_path(appspec_filename),
+                    task_definition_template_file=definition_artifact.at_path(taskdef_filename),
                     container_image_inputs=[
                         codepipeline_actions.CodeDeployEcsContainerImageInput(
-                            input=build_output,
+                            input=image_artifact,
                             task_definition_placeholder="IMAGE1_NAME",
                         )
                     ],
