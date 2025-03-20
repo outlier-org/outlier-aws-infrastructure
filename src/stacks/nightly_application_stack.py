@@ -20,7 +20,7 @@ class NightlyApplicationStack(cdk.Stack):
             self,
             "Network",
             create_endpoints=False,
-            create_application_security_groups=True
+            create_application_security_groups=True,
         )
 
         # Storage resources (S3 buckets)
@@ -32,6 +32,7 @@ class NightlyApplicationStack(cdk.Stack):
             "DatabaseConstruct",
             vpc=network.vpc,
             security_group=network.rds_security_group,
+            snapshot_arn="arn:aws:rds:us-east-1:651706782949:cluster-snapshot:shareable-prod-snapshot-03-19",
         )
 
         # ECR Repository

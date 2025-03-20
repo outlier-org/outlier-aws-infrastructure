@@ -12,8 +12,13 @@ class DatabaseConstruct(BaseConstruct):
         id: str,
         vpc: ec2.IVpc,
         security_group: ec2.ISecurityGroup,
+        snapshot_arn: str,
+        sub_environment: str = "",
     ):
         super().__init__(scope, id)
+
+        self.sub_environment = sub_environment
+        self.snapshot_arn = snapshot_arn
 
         # Define PostgreSQL 16.4 version manually since it apparently isn't in CDK enums yet
         pg_engine_version = rds.AuroraPostgresEngineVersion.of("16.4", "16")
@@ -51,22 +56,22 @@ class DatabaseConstruct(BaseConstruct):
             self,
             "NightlyDBCluster",
             engine=rds.DatabaseClusterEngine.aurora_postgres(version=pg_engine_version),
-            snapshot_identifier="arn:aws:rds:us-east-1:651706782949:cluster-snapshot:shareable-prod-snapshot-03-19",
-            cluster_identifier="outlier-nightly-db-cluster-updated",
+            snapshot_identifier=self.snapshot_arn,
+            cluster_identifier=f"outlier-db-cluster-{self.environment}{self.sub_environment}",
             writer=rds.ClusterInstance.serverless_v2(
                 "writer", scale_with_writer=True, parameter_group=instance_param_group
             ),
             readers=[
                 rds.ClusterInstance.serverless_v2(
                     "reader1",
-                    scale_with_writer=False, # Will scale based on read load
+                    scale_with_writer=False,  # Will scale based on read load
                     parameter_group=instance_param_group,
                 )
             ],
             serverless_v2_min_capacity=0.5,  # Min 0.5 ACU = ~1GB RAM
             serverless_v2_max_capacity=4,  # Max 4 ACU = ~8GB RAM
             port=5432,
-            instance_identifier_base="outlier-nightly-db-updated",
+            instance_identifier_base=f"outlier-db-instance-{self.environment}{self.sub_environment}",
             vpc=vpc,
             vpc_subnets=ec2.SubnetSelection(
                 subnet_type=ec2.SubnetType.PRIVATE_WITH_EGRESS,

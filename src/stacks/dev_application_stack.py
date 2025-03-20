@@ -8,6 +8,7 @@ from custom_constructs.ecs_construct import EcsConstruct
 from custom_constructs.pipeline_construct import PipelineConstruct
 from custom_constructs.waf_construct import WafConstruct
 from custom_constructs.storage_construct import StorageConstruct
+from custom_constructs.database_construct import DatabaseConstruct
 
 
 class DevApplicationStack(cdk.Stack):
@@ -36,13 +37,15 @@ class DevApplicationStack(cdk.Stack):
             sub_environment=f"-{self.sub_environment}",
         )
 
-        # # Add the database construct - using the existing RDS security group
-        # database = DatabaseConstruct(
-        #     self,
-        #     "DatabaseConstruct",
-        #     vpc=network.vpc,
-        #     security_group=network.rds_security_group,
-        # )
+        # Database
+        database = DatabaseConstruct(
+            self,
+            "DatabaseConstruct",
+            vpc=network.vpc,
+            security_group=network.rds_security_group,
+            sub_environment=f"-{self.sub_environment}",
+            snapshot_arn="arn:aws:rds:us-east-1:528757783796:cluster-snapshot:outlier-nightly-db-cluster-old-snapshot-03-19",
+        )
 
         # ECR Repository
         ecr = EcrConstruct(
