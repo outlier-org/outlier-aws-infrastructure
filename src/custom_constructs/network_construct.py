@@ -43,8 +43,8 @@ class NetworkConstruct(BaseConstruct):
             self,
             "RdsSecurityGroup",
             vpc=self.vpc,
-            security_group_name=f"outlier-rds-{self.environment}-sg-cdk",
-            description=f"Security group for outlier {self.environment} RDS instance",
+            security_group_name=f"outlier-rds-{self.environment}{self.sub_environment}-sg-cdk",
+            description=f"Security group for outlier {self.environment}{self.sub_environment} RDS instance",
             allow_all_outbound=True,
         )
 
