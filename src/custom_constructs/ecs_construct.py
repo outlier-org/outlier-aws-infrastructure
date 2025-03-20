@@ -11,6 +11,11 @@ from aws_cdk import (
 )
 from .base_construct import BaseConstruct
 
+"""
+ECS Construct that creates and manages ECS resources including clusters, tasks, and services.
+Implements blue-green deployment configuration for containerized applications.
+"""
+
 
 class EcsConstruct(BaseConstruct):
     def __init__(
@@ -29,13 +34,13 @@ class EcsConstruct(BaseConstruct):
     ) -> None:
         super().__init__(scope, id, **kwargs)
 
-        # Store parameters
+        # Initialize configuration parameters
         self.cluster_name = cluster_name
         self.desired_count = desired_count
         self.container_name = container_name
         self.log_group_name = log_group_name
 
-        # ECS Logs - identical to original
+        # Configure CloudWatch log group for ECS containers
         ecs_logs = logs.LogGroup(
             self,
             "EcsLogGroup",
@@ -44,19 +49,19 @@ class EcsConstruct(BaseConstruct):
             removal_policy=cdk.RemovalPolicy.DESTROY,
         )
 
-        # ECS Cluster - identical to original
+        # Create ECS cluster within specified VPC
         self._cluster = ecs.Cluster(
             self, "Cluster", vpc=vpc, cluster_name=self.cluster_name
         )
 
-        # Task Execution Role - identical to original, using existing role
+        # Import existing task execution role
         task_execution_role = iam.Role.from_role_arn(
             self,
             "TaskExecutionRole",
             f"arn:aws:iam::{self.account}:role/ecsTaskExecutionRole",
         )
 
-        # Attach an inline policy - identical to original
+        # Configure permissions for ECR and Secrets Manager access
         task_execution_role.attach_inline_policy(
             iam.Policy(
                 self,
@@ -76,7 +81,7 @@ class EcsConstruct(BaseConstruct):
             )
         )
 
-        # Create task definition - identical CPU/memory to original
+        # Define Fargate task with resource allocations
         task_definition = ecs.FargateTaskDefinition(
             self,
             "TaskDef",
@@ -86,15 +91,14 @@ class EcsConstruct(BaseConstruct):
             memory_limit_mib=4096,  # 4GB
         )
 
-        # Add container with minimal config - parameterized name
+        # Configure container with image and port mapping
         app_container = task_definition.add_container(
             self.container_name,
             image=ecs.ContainerImage.from_ecr_repository(ecr_repository, tag="latest"),
         )
-
         app_container.add_port_mappings(ecs.PortMapping(container_port=1337))
 
-        # Create service - identical to original but parameterized
+        # Deploy Fargate service with blue-green deployment configuration
         self._service = ecs.FargateService(
             self,
             "Service",
@@ -110,7 +114,7 @@ class EcsConstruct(BaseConstruct):
             ),
         )
 
-        # Attach the service to the ALB Target Group
+        # Connect service to load balancer target group
         self._service.attach_to_application_target_group(blue_target_group)
 
     @property

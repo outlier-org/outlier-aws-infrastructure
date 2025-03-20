@@ -8,6 +8,11 @@ import aws_cdk as cdk
 from constructs import Construct
 from .base_construct import BaseConstruct
 
+"""
+WAF Construct that manages Web Application Firewall configuration and logging.
+Implements AWS managed rule sets for common attacks, SQL injection, and IP reputation filtering.
+"""
+
 
 class WafConstruct(BaseConstruct):
     def __init__(
@@ -19,7 +24,7 @@ class WafConstruct(BaseConstruct):
     ):
         super().__init__(scope, id)
 
-        # Create CloudWatch Log Group for WAF with unique name
+        # Configure WAF logging to CloudWatch
         self._log_group = logs.LogGroup(
             self,
             "WafLogGroup",
@@ -28,7 +33,7 @@ class WafConstruct(BaseConstruct):
             removal_policy=cdk.RemovalPolicy.DESTROY,
         )
 
-        # Create WAF ACL with unique name
+        # Create WAF Web ACL with managed rule sets
         self._web_acl = wafv2.CfnWebACL(
             self,
             "OutlierApiWaf",
@@ -42,6 +47,7 @@ class WafConstruct(BaseConstruct):
                 sampled_requests_enabled=True,
             ),
             rules=[
+                # AWS Common Rule Set - basic attack patterns
                 wafv2.CfnWebACL.RuleProperty(
                     name="CommonRuleSet",
                     priority=0,
@@ -57,6 +63,7 @@ class WafConstruct(BaseConstruct):
                         metric_name="CommonRuleSetMetric",
                     ),
                 ),
+                # Known Bad Inputs Rule Set - malicious request patterns
                 wafv2.CfnWebACL.RuleProperty(
                     name="KnownBadInputs",
                     priority=1,
@@ -73,6 +80,7 @@ class WafConstruct(BaseConstruct):
                         metric_name="KnownBadInputsMetric",
                     ),
                 ),
+                # SQL Injection Rule Set - SQL attack prevention
                 wafv2.CfnWebACL.RuleProperty(
                     name="SQLiRules",
                     priority=2,
@@ -88,6 +96,7 @@ class WafConstruct(BaseConstruct):
                         metric_name="SQLiRulesMetric",
                     ),
                 ),
+                # IP Reputation List - known malicious IP addresses
                 wafv2.CfnWebACL.RuleProperty(
                     name="IPReputationList",
                     priority=3,
@@ -107,7 +116,7 @@ class WafConstruct(BaseConstruct):
             ],
         )
 
-        # Enable logging for WAF
+        # Enable WAF logging to CloudWatch
         self._logging = wafv2.CfnLoggingConfiguration(
             self,
             "WafLogging",
@@ -115,7 +124,7 @@ class WafConstruct(BaseConstruct):
             resource_arn=self._web_acl.attr_arn,
         )
 
-        # Associate with ALB
+        # Associate WAF with Application Load Balancer
         self._association = wafv2.CfnWebACLAssociation(
             self,
             "WafAlbAssociation",

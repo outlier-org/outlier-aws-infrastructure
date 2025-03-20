@@ -1,4 +1,3 @@
-# src/custom_constructs/alb_construct_new.py
 import aws_cdk as cdk
 from constructs import Construct
 from aws_cdk import (
@@ -10,6 +9,11 @@ from aws_cdk import (
     Duration,
 )
 from .base_construct import BaseConstruct
+
+"""
+Application Load Balancer Construct that manages ALB configuration, DNS records, and target groups.
+Implements HTTPS/HTTP listeners with SSL termination and blue-green deployment support.
+"""
 
 
 class AlbConstruct(BaseConstruct):
@@ -25,11 +29,11 @@ class AlbConstruct(BaseConstruct):
     ) -> None:
         super().__init__(scope, id, **kwargs)
 
-        # Store parameters
+        # Initialize configuration parameters
         self.load_balancer_name = load_balancer_name
         self.subdomain = subdomain
 
-        # Load Balancer - identical to original
+        # Create internet-facing Application Load Balancer
         self._alb = elbv2.ApplicationLoadBalancer(
             self,
             "ALB",
@@ -39,7 +43,7 @@ class AlbConstruct(BaseConstruct):
             load_balancer_name=self.load_balancer_name,
         )
 
-        # Import the hosted zone - using same zone ID as original
+        # Configure Route53 DNS settings
         hosted_zone = route53.HostedZone.from_hosted_zone_attributes(
             self,
             "ExistingHostedZone",
@@ -47,7 +51,7 @@ class AlbConstruct(BaseConstruct):
             zone_name="nightly.savvasoutlier.com",
         )
 
-        # Create an A record pointing to the ALB - parameterized subdomain
+        # Create DNS record for ALB
         route53.ARecord(
             self,
             "ApiDnsRecord",
@@ -58,14 +62,14 @@ class AlbConstruct(BaseConstruct):
             ),
         )
 
-        # Import the SSL certificate - same certificate as original
+        # Import existing SSL certificate
         certificate = acm.Certificate.from_certificate_arn(
             self,
             "Certificate",
             "arn:aws:acm:us-east-1:528757783796:certificate/71eac7f3-f4f4-4a6c-a32b-d6dad41f94e8",
         )
 
-        # Target Groups - identical to original
+        # Configure blue target group for blue-green deployment
         self._blue_target_group = elbv2.ApplicationTargetGroup(
             self,
             "BlueTargetGroup",
@@ -80,6 +84,7 @@ class AlbConstruct(BaseConstruct):
             ),
         )
 
+        # Configure green target group for blue-green deployment
         self._green_target_group = elbv2.ApplicationTargetGroup(
             self,
             "GreenTargetGroup",
@@ -94,7 +99,7 @@ class AlbConstruct(BaseConstruct):
             ),
         )
 
-        # HTTPS Listener - identical to original
+        # Configure HTTPS listener with SSL termination
         self._https_listener = self._alb.add_listener(
             "HttpsListener",
             port=443,
@@ -104,7 +109,7 @@ class AlbConstruct(BaseConstruct):
             default_target_groups=[self._blue_target_group],
         )
 
-        # HTTP Listener (redirects to HTTPS) - identical to original
+        # Configure HTTP listener with redirect to HTTPS
         self._http_listener = self._alb.add_listener(
             "HttpListener",
             port=80,

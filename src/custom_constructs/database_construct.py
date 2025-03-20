@@ -53,10 +53,14 @@ class DatabaseConstruct(BaseConstruct):
             engine=rds.DatabaseClusterEngine.aurora_postgres(version=pg_engine_version),
             snapshot_identifier="arn:aws:rds:us-east-1:651706782949:cluster-snapshot:shareable-prod-snapshot-03-19",
             cluster_identifier="outlier-nightly-db-cluster-updated",
-            writer=rds.ClusterInstance.serverless_v2("writer", scale_with_writer=True),
+            writer=rds.ClusterInstance.serverless_v2(
+                "writer", scale_with_writer=True, parameter_group=instance_param_group
+            ),
             readers=[
                 rds.ClusterInstance.serverless_v2(
-                    "reader1", scale_with_writer=False  # Will scale based on read load
+                    "reader1",
+                    scale_with_writer=False, # Will scale based on read load
+                    parameter_group=instance_param_group,
                 )
             ],
             serverless_v2_min_capacity=0.5,  # Min 0.5 ACU = ~1GB RAM

@@ -29,13 +29,19 @@ DevApplicationStack(app, f"DevApplicationStack-{environment}", env=aws_environme
 
 
 # Tag all resources in CloudFormation with the environment name
+cdk.Tags.of(app).add("bounded_context", "outlier")
+
+# Tag all resources in CloudFormation with the environment name
+cdk.Tags.of(app).add("env", environment)
+
+# Tag all resources in CloudFormation with the environment name
 cdk.Tags.of(app).add("Environment", environment)
 
 # Tag all resources in CloudFormation with the environment name
 cdk.Tags.of(app).add("aws-cdk-managed", "True")
 
 # Tag all resources in CloudFormation with the environment name
-cdk.Tags.of(app).add("Project", "outlier-aws-infrastructure")
+cdk.Tags.of(app).add("cdk-project", "outlier-aws-infrastructure")
 
 # Synthesize the CDK app
 app.synth()

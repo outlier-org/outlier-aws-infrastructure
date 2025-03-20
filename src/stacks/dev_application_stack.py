@@ -1,6 +1,5 @@
 import aws_cdk as cdk
 from constructs import Construct
-from aws_cdk import aws_ec2 as ec2
 
 from custom_constructs.network_construct import NetworkConstruct
 from custom_constructs.ecr_construct import EcrConstruct
@@ -18,7 +17,7 @@ class DevApplicationStack(cdk.Stack):
         sub_environment = "dev"
         self.sub_environment = sub_environment
 
-        # Tag all resources in the stack
+        # Tag all resources in the stack with sub_environment = dev
         cdk.Tags.of(self).add("SubEnvironment", self.sub_environment)
 
         # Network resources
@@ -27,7 +26,7 @@ class DevApplicationStack(cdk.Stack):
             "Network",
             sub_environment=f"-{self.sub_environment}",
             create_endpoints=False,
-            create_security_groups=True
+            create_application_security_groups=True,
         )
 
         # Storage resources (S3 buckets)
@@ -36,7 +35,6 @@ class DevApplicationStack(cdk.Stack):
             "StorageConstruct",
             sub_environment=f"-{self.sub_environment}",
         )
-
 
         # # Add the database construct - using the existing RDS security group
         # database = DatabaseConstruct(

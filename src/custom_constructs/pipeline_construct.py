@@ -1,4 +1,3 @@
-# src/custom_constructs/pipeline_construct_new.py
 import aws_cdk as cdk
 from constructs import Construct
 from aws_cdk import (
@@ -13,6 +12,11 @@ from aws_cdk import (
     Duration,
 )
 from .base_construct import BaseConstruct
+
+"""
+Pipeline Construct that sets up CI/CD infrastructure using CodePipeline.
+Implements automated build and deployment processes with blue-green deployment strategy.
+"""
 
 
 class PipelineConstruct(BaseConstruct):
@@ -39,7 +43,7 @@ class PipelineConstruct(BaseConstruct):
     ) -> None:
         super().__init__(scope, id, **kwargs)
 
-        # CodeDeploy Setup
+        # Initialize CodeDeploy application and deployment group
         codedeploy_app = codedeploy.EcsApplication(
             self, "CodeDeployApp", application_name=application_name
         )
@@ -55,11 +59,11 @@ class PipelineConstruct(BaseConstruct):
                 test_listener=http_listener,
                 blue_target_group=blue_target_group,
                 green_target_group=green_target_group,
-                termination_wait_time=Duration.minutes(1),  # Same as original
+                termination_wait_time=Duration.minutes(1),
             ),
         )
 
-        # Pipeline Infrastructure - identical to original
+        # Create S3 bucket for build artifacts
         artifact_bucket = s3.Bucket(
             self,
             "ArtifactBucket",
@@ -67,7 +71,7 @@ class PipelineConstruct(BaseConstruct):
             auto_delete_objects=True,
         )
 
-        # Build project - with updated environment variable
+        # Configure CodeBuild project with environment variables
         build_project = codebuild.PipelineProject(
             self,
             "BuildProject",
@@ -86,14 +90,13 @@ class PipelineConstruct(BaseConstruct):
             build_spec=codebuild.BuildSpec.from_source_filename(buildspec_filename),
         )
 
-        # Same policies as original
+        # Grant ECR permissions to build project
         build_project.role.add_managed_policy(
             iam.ManagedPolicy.from_aws_managed_policy_name(
                 "AmazonEC2ContainerRegistryPowerUser"
             )
         )
 
-        # Add Custom ECR permissions - identical to original
         build_project.role.add_to_policy(
             iam.PolicyStatement(
                 actions=[
@@ -115,12 +118,10 @@ class PipelineConstruct(BaseConstruct):
             )
         )
 
-        # Same policy as original
         build_project.role.add_managed_policy(
             iam.ManagedPolicy.from_aws_managed_policy_name("SecretsManagerReadWrite")
         )
 
-        # Pipeline - identical to original but parameterized
         pipeline = codepipeline.Pipeline(
             self,
             "Pipeline",
@@ -128,7 +129,7 @@ class PipelineConstruct(BaseConstruct):
             pipeline_name=pipeline_name,
         )
 
-        # Add CodeStar connection - identical to original
+        # Grant CodeStar connection permissions
         pipeline.role.add_to_policy(
             iam.PolicyStatement(
                 actions=["codestar-connections:UseConnection"],
@@ -138,11 +139,12 @@ class PipelineConstruct(BaseConstruct):
             )
         )
 
+        # Define pipeline artifacts
         source_output = codepipeline.Artifact()
         definition_artifact = codepipeline.Artifact("DefinitionArtifact")
         image_artifact = codepipeline.Artifact("ImageArtifact")
 
-        # Pipeline Source Stage
+        # Add source stage for GitHub integration
         pipeline.add_stage(
             stage_name="Source",
             actions=[
@@ -157,7 +159,7 @@ class PipelineConstruct(BaseConstruct):
             ],
         )
 
-        # Build stage using secondary artifacts
+        # Add build stage for container image
         pipeline.add_stage(
             stage_name="Build",
             actions=[
@@ -170,15 +172,19 @@ class PipelineConstruct(BaseConstruct):
             ],
         )
 
-        # Deploy stage using secondary artifacts
+        # Add deployment stage for blue-green deployment
         pipeline.add_stage(
             stage_name="Deploy",
             actions=[
                 codepipeline_actions.CodeDeployEcsDeployAction(
                     action_name="Deploy",
                     deployment_group=self._deployment_group,
-                    app_spec_template_file=definition_artifact.at_path(appspec_filename),
-                    task_definition_template_file=definition_artifact.at_path(taskdef_filename),
+                    app_spec_template_file=definition_artifact.at_path(
+                        appspec_filename
+                    ),
+                    task_definition_template_file=definition_artifact.at_path(
+                        taskdef_filename
+                    ),
                     container_image_inputs=[
                         codepipeline_actions.CodeDeployEcsContainerImageInput(
                             input=image_artifact,

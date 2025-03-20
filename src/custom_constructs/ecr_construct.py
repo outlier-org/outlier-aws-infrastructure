@@ -3,6 +3,11 @@ from constructs import Construct
 from aws_cdk import aws_ecr as ecr
 from .base_construct import BaseConstruct
 
+"""
+ECR Construct that creates and manages Elastic Container Registry repositories.
+Implements lifecycle policies for image retention and cleanup.
+"""
+
 
 class EcrConstruct(BaseConstruct):
     def __init__(
@@ -10,6 +15,7 @@ class EcrConstruct(BaseConstruct):
     ) -> None:
         super().__init__(scope, id, **kwargs)
 
+        # Create ECR repository with lifecycle rules
         self._repository = ecr.Repository(
             self,
             "EcrRepo",
@@ -18,7 +24,7 @@ class EcrConstruct(BaseConstruct):
             lifecycle_rules=[
                 ecr.LifecycleRule(
                     description="Keep only the last 10 images",
-                    max_image_count=10,  # Keep only the last 10 images
+                    max_image_count=10,
                     rule_priority=1,
                     tag_status=ecr.TagStatus.ANY,
                 )

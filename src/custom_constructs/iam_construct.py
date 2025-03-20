@@ -1,15 +1,19 @@
-# src/custom_constructs/iam_construct.py
 from aws_cdk import aws_iam as iam
 import aws_cdk as cdk
 from constructs import Construct
 from .base_construct import BaseConstruct
+
+"""
+IAM Construct that manages roles and policies for ECS tasks, CodeDeploy, and CodeBuild.
+Implements least-privilege access for service components.
+"""
 
 
 class IamConstruct(BaseConstruct):
     def __init__(self, scope: Construct, id: str):
         super().__init__(scope, id)
 
-        # In iam_construct.py, update the task execution role:
+        # Create ECS Task Execution Role with managed policies
         self._task_execution_role = iam.Role(
             self,
             "EcsTaskExecutionRole",
@@ -17,7 +21,6 @@ class IamConstruct(BaseConstruct):
             assumed_by=iam.ServicePrincipal("ecs-tasks.amazonaws.com"),
             description="Allows ECS tasks to call AWS services on your behalf.",
             managed_policies=[
-                # AWS Managed Policies
                 iam.ManagedPolicy.from_aws_managed_policy_name(
                     "service-role/AmazonECSTaskExecutionRolePolicy"
                 ),
@@ -34,7 +37,7 @@ class IamConstruct(BaseConstruct):
             ],
         )
 
-        # Add custom policies that match OutlierAPISecretManagerReadPolicy and OutlierAPIS3AccessPolicy
+        # Add Secrets Manager access permissions
         self._task_execution_role.add_to_policy(
             iam.PolicyStatement(
                 effect=iam.Effect.ALLOW,
@@ -46,6 +49,7 @@ class IamConstruct(BaseConstruct):
             )
         )
 
+        # Add CloudWatch Logs permissions
         self._task_execution_role.add_to_policy(
             iam.PolicyStatement(
                 effect=iam.Effect.ALLOW,
@@ -61,6 +65,7 @@ class IamConstruct(BaseConstruct):
             )
         )
 
+        # Add S3 bucket access permissions
         self._task_execution_role.add_to_policy(
             iam.PolicyStatement(
                 effect=iam.Effect.ALLOW,
@@ -72,7 +77,7 @@ class IamConstruct(BaseConstruct):
             )
         )
 
-        # Task Role - used by the actual running containers
+        # Create ECS Task Role for container runtime permissions
         self._task_role = iam.Role(
             self,
             "EcsTaskRole",
@@ -80,7 +85,7 @@ class IamConstruct(BaseConstruct):
             assumed_by=iam.ServicePrincipal("ecs-tasks.amazonaws.com"),
         )
 
-        # Add S3 permissions to Task Role
+        # Grant S3 permissions to Task Role
         self._task_role.add_to_policy(
             iam.PolicyStatement(
                 effect=iam.Effect.ALLOW,
@@ -92,7 +97,7 @@ class IamConstruct(BaseConstruct):
             )
         )
 
-        # Add Secrets Manager permissions to Task Role
+        # Grant Secrets Manager permissions to Task Role
         self._task_role.add_to_policy(
             iam.PolicyStatement(
                 effect=iam.Effect.ALLOW,
@@ -104,7 +109,7 @@ class IamConstruct(BaseConstruct):
             )
         )
 
-        # CodeDeploy Role
+        # Create CodeDeploy Role with managed policy
         self._codedeploy_role = iam.Role(
             self,
             "CodeDeployRole",
@@ -117,7 +122,7 @@ class IamConstruct(BaseConstruct):
             ],
         )
 
-        # CodeBuild Role
+        # Create CodeBuild Role for build processes
         self._codebuild_role = iam.Role(
             self,
             "CodeBuildRole",
@@ -125,7 +130,7 @@ class IamConstruct(BaseConstruct):
             assumed_by=iam.ServicePrincipal("codebuild.amazonaws.com"),
         )
 
-        # Add permissions to CodeBuild Role
+        # Grant necessary permissions to CodeBuild Role
         self._codebuild_role.add_to_policy(
             iam.PolicyStatement(
                 effect=iam.Effect.ALLOW,

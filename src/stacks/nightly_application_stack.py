@@ -1,6 +1,5 @@
 import aws_cdk as cdk
 from constructs import Construct
-from aws_cdk import aws_ec2 as ec2
 
 from custom_constructs.network_construct import NetworkConstruct
 from custom_constructs.ecr_construct import EcrConstruct
@@ -18,7 +17,10 @@ class NightlyApplicationStack(cdk.Stack):
 
         # Network resources
         network = NetworkConstruct(
-            self, "Network", create_endpoints=False, create_security_groups=True
+            self,
+            "Network",
+            create_endpoints=False,
+            create_application_security_groups=True
         )
 
         # Storage resources (S3 buckets)

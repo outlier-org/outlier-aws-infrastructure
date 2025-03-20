@@ -1,11 +1,7 @@
-# src/stacks/base_stack.py
 import aws_cdk as cdk
 from constructs import Construct
 from custom_constructs.network_construct import NetworkConstruct
-
-# from custom_constructs.storage_construct import StorageConstruct
 from custom_constructs.iam_construct import IamConstruct
-from custom_constructs.database_construct import DatabaseConstruct
 
 
 class BaseStack(cdk.Stack):
@@ -17,11 +13,8 @@ class BaseStack(cdk.Stack):
             self,
             "NetworkConstruct",
             create_endpoints=True,
-            create_security_groups=False
+            create_application_security_groups=False,
         )
-
-        # Storage resources (S3 buckets)
-        # storage = StorageConstruct(self, "StorageConstruct")
 
         # IAM resources
         iam = IamConstruct(self, "IamConstruct")
