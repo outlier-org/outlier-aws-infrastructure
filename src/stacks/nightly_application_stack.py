@@ -33,6 +33,8 @@ class NightlyApplicationStack(cdk.Stack):
             vpc=network.vpc,
             security_group=network.rds_security_group,
             snapshot_arn="arn:aws:rds:us-east-1:651706782949:cluster-snapshot:shareable-prod-snapshot-03-19",
+            pg_engine_version_minor="16.4",
+            pg_engine_version_major="16"
         )
 
         # ECR Repository

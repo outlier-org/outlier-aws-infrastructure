@@ -44,7 +44,10 @@ class DevApplicationStack(cdk.Stack):
             vpc=network.vpc,
             security_group=network.rds_security_group,
             sub_environment=f"-{self.sub_environment}",
+            pg_engine_version="12.20",
             snapshot_arn="arn:aws:rds:us-east-1:528757783796:cluster-snapshot:outlier-nightly-db-cluster-old-snapshot-03-19",
+            pg_engine_version_minor="12.20",
+            pg_engine_version_major="12"
         )
 
         # ECR Repository

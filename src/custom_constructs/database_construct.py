@@ -13,15 +13,20 @@ class DatabaseConstruct(BaseConstruct):
         vpc: ec2.IVpc,
         security_group: ec2.ISecurityGroup,
         snapshot_arn: str,
-        sub_environment: str = "",
+        pg_engine_version_minor: str,
+        pg_engine_version_major: str,
+        sub_environment: str = ""
     ):
         super().__init__(scope, id)
 
         self.sub_environment = sub_environment
         self.snapshot_arn = snapshot_arn
 
-        # Define PostgreSQL 16.4 version manually since it apparently isn't in CDK enums yet
-        pg_engine_version = rds.AuroraPostgresEngineVersion.of("16.4", "16")
+        # Create the engine version from the provided version numbers
+        self.pg_engine_version = rds.AuroraPostgresEngineVersion.of(
+            pg_engine_version_minor,
+            pg_engine_version_major
+        )
 
         # Parameter Groups
         cluster_param_group = rds.ParameterGroup(
