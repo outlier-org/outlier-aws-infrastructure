@@ -68,11 +68,9 @@ class PipelineConstruct(BaseConstruct):
             git_configuration=codepipeline.GitConfiguration(
                 source_action=source_action,
                 push_filter=[
-                    codepipeline.GitPushFilter(
-                        branchesInclude=[source_branch]
-                    )
-                ]
-            )
+                    codepipeline.GitPushFilter(branches_includes=[source_branch])
+                ],
+            ),
         )
 
         # Create pipeline with trigger
