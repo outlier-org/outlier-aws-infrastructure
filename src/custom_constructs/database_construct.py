@@ -32,7 +32,7 @@ class DatabaseConstruct(BaseConstruct):
         cluster_param_group = rds.ParameterGroup(
             self,
             "CustomClusterParamGroup",
-            engine=rds.DatabaseClusterEngine.aurora_postgres(version=pg_engine_version),
+            engine=rds.DatabaseClusterEngine.aurora_postgres(version=self.pg_engine_version),
             description="Contains unique parameters needed for: AWS Zero-ETL",
             parameters={
                 "aurora.enhanced_logical_replication": "1",
@@ -45,7 +45,7 @@ class DatabaseConstruct(BaseConstruct):
         instance_param_group = rds.ParameterGroup(
             self,
             "CustomInstanceParamGroup",
-            engine=rds.DatabaseClusterEngine.aurora_postgres(version=pg_engine_version),
+            engine=rds.DatabaseClusterEngine.aurora_postgres(version=self.pg_engine_version),
             description="Contains unique parameters for: PSQL slow-query-logging",
             parameters={
                 "auto_explain.log_analyze": "1",
@@ -60,7 +60,7 @@ class DatabaseConstruct(BaseConstruct):
         self.db_cluster = rds.DatabaseClusterFromSnapshot(
             self,
             "NightlyDBCluster",
-            engine=rds.DatabaseClusterEngine.aurora_postgres(version=pg_engine_version),
+            engine=rds.DatabaseClusterEngine.aurora_postgres(version=self.pg_engine_version),
             snapshot_identifier=self.snapshot_arn,
             cluster_identifier=f"outlier-db-cluster-{self.environment}{self.sub_environment}",
             writer=rds.ClusterInstance.serverless_v2(
