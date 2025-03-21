@@ -1,4 +1,3 @@
-# file: src/custom_constructs/pipeline_construct.py
 import aws_cdk as cdk
 from constructs import Construct
 from aws_cdk import (
@@ -13,6 +12,11 @@ from aws_cdk import (
     Duration,
 )
 from .base_construct import BaseConstruct
+
+"""
+Pipeline Construct that sets up CI/CD infrastructure using CodePipeline.
+Implements automated build and deployment processes with blue-green deployment strategy.
+"""
 
 
 class PipelineConstruct(BaseConstruct):
@@ -39,59 +43,6 @@ class PipelineConstruct(BaseConstruct):
     ) -> None:
         super().__init__(scope, id, **kwargs)
 
-        # Create S3 bucket for build artifacts
-        artifact_bucket = s3.Bucket(
-            self,
-            "ArtifactBucket",
-            removal_policy=cdk.RemovalPolicy.DESTROY,
-            auto_delete_objects=True,
-        )
-
-        # Define pipeline artifacts first
-        source_output = codepipeline.Artifact()
-        definition_artifact = codepipeline.Artifact("DefinitionArtifact")
-        image_artifact = codepipeline.Artifact("ImageArtifact")
-
-        # Create source action first
-        source_action = codepipeline_actions.CodeStarConnectionsSourceAction(
-            action_name="GitHub",
-            owner="outlier-org",
-            repo="outlier-api",
-            branch=source_branch,
-            connection_arn="arn:aws:codeconnections:us-east-1:528757783796:connection/ddd91232-5089-40b4-bc84-7ba9e4d1c20f",
-            output=source_output,
-        )
-
-        # Create trigger configuration
-        pipeline_trigger = codepipeline.Trigger(
-            provider_type=codepipeline.ProviderType.CODE_STAR_SOURCE_CONNECTION,
-            git_configuration=codepipeline.GitConfiguration(
-                source_action=source_action,
-                push_filter=[
-                    codepipeline.GitPushFilter(branches_includes=[source_branch])
-                ],
-            ),
-        )
-
-        # Create pipeline with trigger
-        pipeline = codepipeline.Pipeline(
-            self,
-            "Pipeline",
-            artifact_bucket=artifact_bucket,
-            pipeline_name=pipeline_name,
-            triggers=[pipeline_trigger],
-        )
-
-        # Grant CodeStar connection permissions
-        pipeline.role.add_to_policy(
-            iam.PolicyStatement(
-                actions=["codestar-connections:UseConnection"],
-                resources=[
-                    "arn:aws:codeconnections:us-east-1:528757783796:connection/ddd91232-5089-40b4-bc84-7ba9e4d1c20f"
-                ],
-            )
-        )
-
         # Initialize CodeDeploy application and deployment group
         codedeploy_app = codedeploy.EcsApplication(
             self, "CodeDeployApp", application_name=application_name
@@ -112,7 +63,15 @@ class PipelineConstruct(BaseConstruct):
             ),
         )
 
-        # Configure CodeBuild project
+        # Create S3 bucket for build artifacts
+        artifact_bucket = s3.Bucket(
+            self,
+            "ArtifactBucket",
+            removal_policy=cdk.RemovalPolicy.DESTROY,
+            auto_delete_objects=True,
+        )
+
+        # Configure CodeBuild project with environment variables
         build_project = codebuild.PipelineProject(
             self,
             "BuildProject",
@@ -163,12 +122,45 @@ class PipelineConstruct(BaseConstruct):
             iam.ManagedPolicy.from_aws_managed_policy_name("SecretsManagerReadWrite")
         )
 
-        # Add pipeline stages
-        pipeline.add_stage(
-            stage_name="Source",
-            actions=[source_action],
+        pipeline = codepipeline.Pipeline(
+            self,
+            "Pipeline",
+            artifact_bucket=artifact_bucket,
+            pipeline_name=pipeline_name,
         )
 
+        # Grant CodeStar connection permissions
+        pipeline.role.add_to_policy(
+            iam.PolicyStatement(
+                actions=["codestar-connections:UseConnection"],
+                resources=[
+                    "arn:aws:codeconnections:us-east-1:528757783796:connection/ddd91232-5089-40b4-bc84-7ba9e4d1c20f"
+                ],
+            )
+        )
+
+        # Define pipeline artifacts
+        source_output = codepipeline.Artifact()
+        definition_artifact = codepipeline.Artifact("DefinitionArtifact")
+        image_artifact = codepipeline.Artifact("ImageArtifact")
+
+        # Add source stage for GitHub integration
+        pipeline.add_stage(
+            stage_name="Source",
+            actions=[
+                codepipeline_actions.CodeStarConnectionsSourceAction(
+                    action_name="GitHub",
+                    owner="outlier-org",
+                    repo="outlier-api",
+                    branch=source_branch,
+                    connection_arn="arn:aws:codeconnections:us-east-1:528757783796:connection/ddd91232-5089-40b4-bc84-7ba9e4d1c20f",
+                    output=source_output,
+                    trigger_on_push=True
+                )
+            ],
+        )
+
+        # Add build stage for container image
         pipeline.add_stage(
             stage_name="Build",
             actions=[
@@ -181,6 +173,7 @@ class PipelineConstruct(BaseConstruct):
             ],
         )
 
+        # Add deployment stage for blue-green deployment
         pipeline.add_stage(
             stage_name="Deploy",
             actions=[
