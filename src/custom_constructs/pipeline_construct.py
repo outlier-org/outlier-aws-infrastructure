@@ -155,7 +155,8 @@ class PipelineConstruct(BaseConstruct):
                     branch=source_branch,
                     connection_arn="arn:aws:codeconnections:us-east-1:528757783796:connection/ddd91232-5089-40b4-bc84-7ba9e4d1c20f",
                     output=source_output,
-                    trigger_on_push=True
+                    trigger_on_push=True,
+                    code_build_clone_output=True
                 )
             ],
         )
