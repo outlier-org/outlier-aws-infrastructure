@@ -145,19 +145,31 @@ class PipelineConstruct(BaseConstruct):
         image_artifact = codepipeline.Artifact("ImageArtifact")
 
         # Add source stage for GitHub integration
+        source_action = codepipeline_actions.CodeStarConnectionsSourceAction(
+            action_name="GitHub",
+            owner="outlier-org",
+            repo="outlier-api",
+            branch=source_branch,
+            connection_arn="arn:aws:codeconnections:us-east-1:528757783796:connection/ddd91232-5089-40b4-bc84-7ba9e4d1c20f",
+            output=source_output,
+            trigger_on_push=False  # Disable default webhook
+        )
+
         pipeline.add_stage(
             stage_name="Source",
-            actions=[
-                codepipeline_actions.CodeStarConnectionsSourceAction(
-                    action_name="GitHub",
-                    owner="outlier-org",
-                    repo="outlier-api",
-                    branch=source_branch,
-                    connection_arn="arn:aws:codeconnections:us-east-1:528757783796:connection/ddd91232-5089-40b4-bc84-7ba9e4d1c20f",
-                    output=source_output,
-                    trigger_on_push=True
-                )
-            ],
+            actions=[source_action],
+        )
+
+        pipeline.add_trigger(
+            provider_type=codepipeline.ProviderType.CODE_STAR_SOURCE_CONNECTION,
+            git_configuration=codepipeline.GitConfiguration(
+                source_action=source_action,
+                push_filter=[
+                    codepipeline.GitPushFilter(
+                        file_paths_includes=["*"]
+                    )
+                ]
+            )
         )
 
         # Add build stage for container image
